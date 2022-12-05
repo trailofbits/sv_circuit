@@ -3,7 +3,7 @@ use std::fs::{read_to_string, File};
 use std::io::{prelude::*, BufReader, BufWriter};
 
 use clap::{App, Arg};
-use mcircuit::exporters::{BristolFashion, Export, IR1};
+use mcircuit::exporters::{BristolFashion, Export, IR0, IR1};
 use mcircuit::parsers::blif::{parse_split, BlifParser};
 use mcircuit::parsers::WireHasher;
 use mcircuit::{CombineOperation, Operation, Parse};
@@ -63,7 +63,8 @@ fn main() {
 
     // compilation target determined by output file extension.
     let export_bristol = maybe_out.map_or(false, |out| out.ends_with("bristol"));
-    let export_ir0 = maybe_out.map_or(false, |out| out.ends_with("ir0"));
+    let export_ir0 = maybe_out.map_or(false, |out| out.ends_with("rel"));
+    let export_ir1 = maybe_out.map_or(false, |out| out.ends_with("ir1"));
 
     match (maybe_arith, maybe_bool, maybe_conn) {
         (Some(path), None, None) => {
@@ -97,13 +98,37 @@ fn main() {
                 })
                 .collect();
 
-            match (export_bristol, export_ir0) {
-                (true, false) => BristolFashion::export_circuit(
+            match (export_bristol, export_ir0, export_ir1) {
+                // Bristol
+                (true, false, false) => BristolFashion::export_circuit(
                     &flat.into_iter().collect::<Vec<Operation<bool>>>(),
                     &w,
                     &mut writer,
                 ),
-                (false, true) => IR1::export_circuit(
+                // IR0
+                (false, true, false) => {
+                    // write witness.
+                    let witness_fname = format!("{}.wit", top);
+                    let mut witness_writer = BufWriter::new(
+                        File::create(witness_fname).expect("Failed to open output file"),
+                    );
+                    writeln!(witness_writer, "version 1.0.0;");
+                    writeln!(witness_writer, "field characteristic 2 degree 1;");
+                    writeln!(witness_writer, "short_witness");
+                    writeln!(witness_writer, "@begin");
+                    for wit_val in &w {
+                        writeln!(witness_writer, "< {} > ;", *wit_val as u8);
+                    }
+                    writeln!(witness_writer, "@end");
+
+                    IR0::export_circuit(
+                        &flat.into_iter().collect::<Vec<Operation<bool>>>(),
+                        &w,
+                        &mut writer,
+                    )
+                }
+                // IR1
+                (false, false, true) => IR1::export_circuit(
                     &flat.into_iter().collect::<Vec<Operation<bool>>>(),
                     &w,
                     &mut writer,

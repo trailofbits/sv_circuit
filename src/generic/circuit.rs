@@ -792,7 +792,7 @@ where
     Operation<T>: Identity<T>,
 {
     type Item = Operation<T>;
-    type IntoIter = impl Iterator<Item = Self::Item>;
+    type IntoIter = impl Iterator<Item = Operation<T>>;
 
     fn into_iter(self) -> Self::IntoIter {
         self.inputs
