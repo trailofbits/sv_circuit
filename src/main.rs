@@ -63,7 +63,7 @@ fn main() {
 
     // compilation target determined by output file extension.
     let export_bristol = maybe_out.map_or(false, |out| out.ends_with("bristol"));
-    let export_ir0 = maybe_out.map_or(false, |out| out.ends_with("rel"));
+    let export_ir0 = maybe_out.map_or(false, |out| out.ends_with("circuit"));
     let export_ir1 = maybe_out.map_or(false, |out| out.ends_with("ir1"));
 
     match (maybe_arith, maybe_bool, maybe_conn) {
@@ -108,19 +108,20 @@ fn main() {
                 // IR0
                 (false, true, false) => {
                     // write witness.
-                    let witness_fname = format!("{}.wit", top);
+                    let witness_fname = format!("{}.private_input", top);
                     let mut witness_writer = BufWriter::new(
                         File::create(witness_fname).expect("Failed to open output file"),
                     );
-                    writeln!(witness_writer, "version 1.0.0;");
-                    writeln!(witness_writer, "field characteristic 2 degree 1;");
-                    writeln!(witness_writer, "short_witness");
-                    writeln!(witness_writer, "@begin");
-                    for wit_val in &w {
-                        writeln!(witness_writer, "< {} > ;", *wit_val as u8);
-                    }
-                    writeln!(witness_writer, "@end");
+                    IR0::export_private_input(&w, &mut witness_writer).expect("Failed to write private input");
+                    
+                    // write instance.
+                    let instance_fname = format!("{}.public_input", top);
+                    let mut instance_writer = BufWriter::new(
+                        File::create(instance_fname).expect("Failed to open output file"),
+                    );
+                    IR0::export_public_input(None,&mut instance_writer).expect("Failed to write public input");
 
+                    // write circuit.
                     IR0::export_circuit(
                         &flat.into_iter().collect::<Vec<Operation<bool>>>(),
                         &w,
