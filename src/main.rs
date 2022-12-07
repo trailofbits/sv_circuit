@@ -112,14 +112,16 @@ fn main() {
                     let mut witness_writer = BufWriter::new(
                         File::create(witness_fname).expect("Failed to open output file"),
                     );
-                    IR0::export_private_input(&w, &mut witness_writer).expect("Failed to write private input");
-                    
+                    IR0::export_private_input(&w, &mut witness_writer)
+                        .expect("Failed to write private input");
+
                     // write instance.
                     let instance_fname = format!("{}.public_input", top);
                     let mut instance_writer = BufWriter::new(
                         File::create(instance_fname).expect("Failed to open output file"),
                     );
-                    IR0::export_public_input(None,&mut instance_writer).expect("Failed to write public input");
+                    IR0::export_public_input(None, &mut instance_writer)
+                        .expect("Failed to write public input");
 
                     // write circuit.
                     IR0::export_circuit(

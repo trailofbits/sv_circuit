@@ -84,16 +84,18 @@ pub fn register_aliasing(circuit: &[Op], max_wire: usize) -> Vec<Op> {
                     next += 1;
                     contig_blocks.remove(&w);
                 }
-            } else if !alias.contains_key(&wout) {
-                let new_wout: usize = match free.pop() {
-                    Some(Reverse(new_wout)) => new_wout,
-                    None => {
-                        let l = next;
-                        next += 1;
-                        l
-                    }
-                };
-                alias.insert(wout, new_wout);
+            } else {
+                alias.entry(wout).or_insert_with(|| {
+                    let new_wout: usize = match free.pop() {
+                        Some(Reverse(new_wout)) => new_wout,
+                        None => {
+                            let l = next;
+                            next += 1;
+                            l
+                        }
+                    };
+                    new_wout
+                });
             }
             max_mem = max(max_mem, alias.len());
             new_wouts.push(alias[&wout]);
