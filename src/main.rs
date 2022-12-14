@@ -8,8 +8,26 @@ use mcircuit::parsers::blif::{parse_split, BlifParser};
 use mcircuit::parsers::WireHasher;
 use mcircuit::{CombineOperation, Operation, Parse};
 
+use std::io;
 use std::mem::size_of;
 use sv_circuit::CircuitCompositor;
+
+fn emit_ir0(out_fname: &str, witness: &[bool]) -> Result<(), io::Error> {
+    // write witness.
+    let witness_fname = format!("{}.private_input", out_fname);
+    let mut witness_writer =
+        BufWriter::new(File::create(witness_fname).expect("Failed to open output file"));
+    IR0::export_private_input(witness, &mut witness_writer)
+        .expect("Failed to write private input");
+
+    // write instance.
+    let instance_fname = format!("{}.public_input", out_fname);
+    let mut instance_writer =
+        BufWriter::new(File::create(instance_fname).expect("Failed to open output file"));
+    IR0::export_public_input(None, &mut instance_writer).expect("Failed to write public input");
+
+    Ok(())
+}
 
 /// Rust version of circuit compositor
 fn main() {
@@ -51,28 +69,28 @@ fn main() {
                 .short("o")
                 .long("output_file")
                 .takes_value(true)
+                .required(true)
                 .help("Compiled circuit"),
         )
         .get_matches();
 
+    let out_fname = matches.value_of("output_file").unwrap();
+
     let maybe_arith = matches.value_of("arithmetic_circuit");
     let maybe_bool = matches.value_of("boolean_circuit");
     let maybe_conn = matches.value_of("connection_circuit");
-    let maybe_out = matches.value_of("output_file");
     let maybe_witness = matches.value_of("witness");
 
     // compilation target determined by output file extension.
-    let export_bristol = maybe_out.map_or(false, |out| out.ends_with("bristol"));
-    let export_ir0 = maybe_out.map_or(false, |out| out.ends_with("rel"));
-    let export_ir1 = maybe_out.map_or(false, |out| out.ends_with("ir1"));
+    let export_bristol = out_fname.ends_with("bristol");
+    let export_ir0 = out_fname.ends_with("rel");
+    let export_ir1 = out_fname.ends_with("ir1");
 
     match (maybe_arith, maybe_bool, maybe_conn) {
         (Some(path), None, None) => {
             let reader =
                 BufReader::new(File::open(path).expect("Failed to open arithmetic circuit file"));
-            let (flat, top, _) = sv_circuit::flatten(BlifParser::<u64>::new(reader));
-            let default_fname = format!("{}.bin", top);
-            let out_fname = maybe_out.unwrap_or(default_fname.as_str());
+            let (flat, _, _) = sv_circuit::flatten(BlifParser::<u64>::new(reader));
             let writer =
                 BufWriter::new(File::create(out_fname).expect("Failed to open output file"));
             bincode::serialize_into(writer, &flat).expect("Failed to write circuit");
@@ -80,9 +98,8 @@ fn main() {
         (None, Some(path), None) => {
             let reader =
                 BufReader::new(File::open(path).expect("Failed to open boolean circuit file"));
-            let (flat, top, _) = sv_circuit::flatten(BlifParser::<bool>::new(reader));
-            let default_fname = format!("{}.bin", top);
-            let out_fname = maybe_out.unwrap_or(default_fname.as_str());
+            let (flat, _, _) = sv_circuit::flatten(BlifParser::<bool>::new(reader));
+
             let mut writer =
                 BufWriter::new(File::create(out_fname).expect("Failed to open output file"));
 
@@ -91,6 +108,7 @@ fn main() {
                 .expect("failed to open witness")
                 .trim()
                 .chars()
+                .filter(|&c| c != '\n')
                 .map(|c| match c {
                     '0' => false,
                     '1' => true,
@@ -106,27 +124,12 @@ fn main() {
                     &mut writer,
                 ),
                 // IR0
-                (false, true, false) => {
-                    // write witness.
-                    let witness_fname = format!("{}.wit", top);
-                    let mut witness_writer = BufWriter::new(
-                        File::create(witness_fname).expect("Failed to open output file"),
-                    );
-                    writeln!(witness_writer, "version 1.0.0;");
-                    writeln!(witness_writer, "field characteristic 2 degree 1;");
-                    writeln!(witness_writer, "short_witness");
-                    writeln!(witness_writer, "@begin");
-                    for wit_val in &w {
-                        writeln!(witness_writer, "< {} > ;", *wit_val as u8);
-                    }
-                    writeln!(witness_writer, "@end");
-
-                    IR0::export_circuit(
-                        &flat.into_iter().collect::<Vec<Operation<bool>>>(),
-                        &w,
-                        &mut writer,
-                    )
-                }
+                (false, true, false) => IR0::export_circuit(
+                    &flat.into_iter().collect::<Vec<Operation<bool>>>(),
+                    &w,
+                    &mut writer,
+                )
+                .and(emit_ir0(out_fname, &w)),
                 // IR1
                 (false, false, true) => IR1::export_circuit(
                     &flat.into_iter().collect::<Vec<Operation<bool>>>(),
@@ -186,7 +189,6 @@ fn main() {
                 );
             }
 
-            let out_fname = maybe_out.unwrap_or("composite.bin");
             let writer =
                 BufWriter::new(File::create(out_fname).expect("Failed to open output file"));
 
@@ -219,7 +221,7 @@ fn main() {
             println!("Dumped composite circuit to {}", out_fname);
         }
         (_, _, _) => {
-            println!("Usage: -a [arithmetic circuit file] -b [boolean circuit file] -c [connection circuit file] -o [output file]")
+            println!("Usage: -a [arithmetic circuit file] -b [boolean circuit file] -c [connection circuit file] -w [witness] -o [output file]")
         }
     }
 }
