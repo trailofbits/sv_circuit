@@ -17,8 +17,7 @@ fn emit_ir0(out_fname: &str, witness: &[bool]) -> Result<(), io::Error> {
     let witness_fname = format!("{}.private_input", out_fname);
     let mut witness_writer =
         BufWriter::new(File::create(witness_fname).expect("Failed to open output file"));
-    IR0::export_private_input(witness, &mut witness_writer)
-        .expect("Failed to write private input");
+    IR0::export_private_input(witness, &mut witness_writer).expect("Failed to write private input");
 
     // write instance.
     let instance_fname = format!("{}.public_input", out_fname);
@@ -83,7 +82,7 @@ fn main() {
 
     // compilation target determined by output file extension.
     let export_bristol = out_fname.ends_with("bristol");
-    let export_ir0 = out_fname.ends_with("rel");
+    let export_ir0 = out_fname.ends_with("circuit");
     let export_ir1 = out_fname.ends_with("ir1");
 
     match (maybe_arith, maybe_bool, maybe_conn) {
