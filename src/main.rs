@@ -77,9 +77,8 @@ fn main() {
     let out_fname = matches.value_of("output_file").unwrap();
     let base_fname = Path::new(out_fname)
         .file_stem()
-        .expect("Failed to generate base file name")
-        .to_str()
-        .expect("Failed to parse base_fname string");
+        .and_then(|s| s.to_str())
+        .expect("Failed to parse base_fname from output path");
 
     let maybe_arith = matches.value_of("arithmetic_circuit");
     let maybe_bool = matches.value_of("boolean_circuit");
