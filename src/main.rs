@@ -1,6 +1,7 @@
 use std::collections::{HashMap, VecDeque};
 use std::fs::{read_to_string, File};
 use std::io::{prelude::*, BufReader, BufWriter};
+use std::path::Path;
 
 use clap::{App, Arg};
 use mcircuit::exporters::{BristolFashion, Export, IR0, IR1};
@@ -12,17 +13,17 @@ use std::io;
 use std::mem::size_of;
 use sv_circuit::CircuitCompositor;
 
-fn emit_ir0(out_fname: &str, witness: &[bool]) -> Result<(), io::Error> {
+fn emit_ir0(base_fname: &str, witness: &[bool]) -> Result<(), io::Error> {
     // write witness.
-    let witness_fname = format!("{}.private_input", out_fname);
+    let witness_fname = format!("{}.private_input", base_fname);
     let mut witness_writer =
-        BufWriter::new(File::create(witness_fname).expect("Failed to open output file"));
+        BufWriter::new(File::create(witness_fname).expect("Failed to open witness file"));
     IR0::export_private_input(witness, &mut witness_writer).expect("Failed to write private input");
 
     // write instance.
-    let instance_fname = format!("{}.public_input", out_fname);
+    let instance_fname = format!("{}.public_input", base_fname);
     let mut instance_writer =
-        BufWriter::new(File::create(instance_fname).expect("Failed to open output file"));
+        BufWriter::new(File::create(instance_fname).expect("Failed to open instance file"));
     IR0::export_public_input(None, &mut instance_writer).expect("Failed to write public input");
 
     Ok(())
@@ -74,6 +75,11 @@ fn main() {
         .get_matches();
 
     let out_fname = matches.value_of("output_file").unwrap();
+    let base_fname = Path::new(out_fname)
+        .file_stem()
+        .expect("Failed to generate base file name")
+        .to_str()
+        .expect("Failed to parse base_fname string");
 
     let maybe_arith = matches.value_of("arithmetic_circuit");
     let maybe_bool = matches.value_of("boolean_circuit");
@@ -81,9 +87,9 @@ fn main() {
     let maybe_witness = matches.value_of("witness");
 
     // compilation target determined by output file extension.
-    let export_bristol = out_fname.ends_with("bristol");
-    let export_ir0 = out_fname.ends_with("circuit");
-    let export_ir1 = out_fname.ends_with("ir1");
+    let export_bristol = out_fname.ends_with(".bristol");
+    let export_ir0 = out_fname.ends_with(".circuit");
+    let export_ir1 = out_fname.ends_with(".ir1");
 
     match (maybe_arith, maybe_bool, maybe_conn) {
         (Some(path), None, None) => {
@@ -128,7 +134,7 @@ fn main() {
                     &w,
                     &mut writer,
                 )
-                .and(emit_ir0(out_fname, &w)),
+                .and(emit_ir0(base_fname, &w)),
                 // IR1
                 (false, false, true) => IR1::export_circuit(
                     &flat.into_iter().collect::<Vec<Operation<bool>>>(),
