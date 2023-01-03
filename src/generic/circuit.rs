@@ -201,10 +201,7 @@ where
                 // Warn if this buffer maps an output to an output. I don't think it breaks
                 // anything, but it's weird.
                 if self.outputs.contains(&out) && self.outputs.contains(&src) {
-                    eprintln!(
-                        "Instruction: BUF {} --> {} maps an output to an output",
-                        src, out
-                    );
+                    eprintln!("Instruction: BUF {src} --> {out} maps an output to an output");
                 }
 
                 // If this buffer doesn't connect to any gates, it probably transparently maps
@@ -371,7 +368,7 @@ where
             .map(|i| &i.name)
             .collect::<Counter<_>>();
         for (name, count) in submod_counts.most_common_ordered() {
-            println!("    {}: {}", name, count);
+            println!("    {name}: {count}");
         }
 
         // Iterate over all the subcircuit descriptors

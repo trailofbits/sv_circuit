@@ -84,7 +84,7 @@ where
                         gate_index,
                         wire: _,
                     } => {
-                        println!("WARNING: {} contains a gate with an undriven input. Dropping this gate and trusting that its output won't be needed.", parent);
+                        println!("WARNING: {parent} contains a gate with an undriven input. Dropping this gate and trusting that its output won't be needed.");
                         let gate = circuit
                             .graph
                             .remove_node(NodeIndex::new(gate_index))
@@ -160,7 +160,7 @@ where
             // If we haven't flattened the circuit, replace our current copy of it with a flattened
             // version
             if !is_flat {
-                println!("\nFlattening {}", sub_name);
+                println!("\nFlattening {sub_name}");
                 let mut sub = self
                     .subcircuits
                     .remove(sub_name)
