@@ -28,5 +28,5 @@ with pkgs; with pkgs.python311Packages; buildPythonPackage rec {
   ];
 
   # NOTE(jl): python dependencies are declared by externally to nix in `pyproject.toml`.
-  format = "pyproject";
+  format = "setuptools";
 }
