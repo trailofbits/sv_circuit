@@ -15,13 +15,13 @@ use sv_circuit::CircuitCompositor;
 
 fn emit_ir0(base_fname: &str, witness: &[bool]) -> Result<(), io::Error> {
     // write witness.
-    let witness_fname = format!("{}.private_input", base_fname);
+    let witness_fname = format!("{base_fname}.private_input");
     let mut witness_writer =
         BufWriter::new(File::create(witness_fname).expect("Failed to open witness file"));
     IR0::export_private_input(witness, &mut witness_writer).expect("Failed to write private input");
 
     // write instance.
-    let instance_fname = format!("{}.public_input", base_fname);
+    let instance_fname = format!("{base_fname}.public_input");
     let mut instance_writer =
         BufWriter::new(File::create(instance_fname).expect("Failed to open instance file"));
     IR0::export_public_input(None, &mut instance_writer).expect("Failed to write public input");
@@ -222,7 +222,7 @@ fn main() {
 
             bincode::serialize_into(writer, &compositor)
                 .expect("Failed to write composite circuit");
-            println!("Dumped composite circuit to {}", out_fname);
+            println!("Dumped composite circuit to {out_fname}");
         }
         (_, _, _) => {
             println!("Usage: -a [arithmetic circuit file] -b [boolean circuit file] -c [connection circuit file] -w [witness] -o [output file]")

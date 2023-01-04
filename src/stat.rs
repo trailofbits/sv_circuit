@@ -48,7 +48,7 @@ fn main() {
                 *counts.entry(key).or_insert(0) += 1;
             }
 
-            println!("{:?}", counts);
+            println!("{counts:?}");
         }
         "wires" => {
             let mut arith_wires: HashSet<usize> = HashSet::new();
