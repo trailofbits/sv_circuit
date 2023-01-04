@@ -7,7 +7,7 @@ with open(os.path.join(this_directory, "README.md"), encoding="utf-8") as f:
 
 
 setup(
-    name="sv-tools",
+    name="verilog_tools",
     description="Zero-Knowledge Proof of Vulnerability Tools",
     long_description_content_type="text/markdown",
     long_description=long_description,
@@ -16,9 +16,6 @@ setup(
     version="0.0.1",
     packages=find_packages(exclude=["tests", "tests.*"]),
     python_requires=">=3.8",
-    install_requires=[
-        "psutil",
-    ],
     entry_points={
         "console_scripts": [
             "sv-netlist = verilog_tools.yosys.netlistify:main",

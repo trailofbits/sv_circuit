@@ -16,17 +16,24 @@ let
     ];
   };
 
+  verilog_tools = with pkgs.python311.pkgs; buildPythonPackage rec {
+    pname = "verilog_tools";
+    version = "0.0.1";
+    src = ./.;
+    format = "setuptools";
+    propagatedBuildInputs = [ psutil ];
+  };
+  sv-python = pkgs.python311.withPackages (ps: with ps; [verilog_tools]);
+
 in
-with pkgs; with pkgs.python311Packages; buildPythonPackage rec {
+with pkgs; stdenv.mkDerivation {
   name = "sv-tools";
   src = ./.;
 
   nativeBuildInputs = [
     cacert
     git
+    sv-python
     sv-rust
   ];
-
-  # NOTE(jl): python dependencies are declared by externally to nix in `pyproject.toml`.
-  format = "setuptools";
 }
