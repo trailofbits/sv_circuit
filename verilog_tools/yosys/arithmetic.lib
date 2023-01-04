@@ -1,0 +1,38 @@
+library(arithmetic) {
+    cell(MULC) {
+        area: 1;
+        pin(A) { direction: input; }
+        pin(B) { direction: input; }
+        pin(OUT) { direction: output; function: "A"; }
+    }
+    cell(ADDC) {
+        area: 1;
+        pin(A) { direction: input; }
+        pin(B) { direction: input; }
+        pin(OUT) { direction: output; function: "A"; }
+    }
+    cell(SUBC) {
+        area: 1;
+        pin(A) { direction: input; }
+        pin(B) { direction: input; }
+        pin(OUT) { direction: output; function: "A"; }
+    }
+    cell(MUL) {
+        area: 1;
+        pin(A) { direction: input; }
+        pin(B) { direction: input; }
+        pin(OUT) { direction: output; function: "A"; }
+    }
+    cell(ADD) {
+        area: 1;
+        pin(A) { direction: input; }
+        pin(B) { direction: input; }
+        pin(OUT) { direction: output; function: "A"; }
+    }
+    cell(SUB) {
+        area: 1;
+        pin(A) { direction: input; }
+        pin(B) { direction: input; }
+        pin(OUT) { direction: output; function: "A"; }
+    }
+}

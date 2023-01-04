@@ -8,7 +8,7 @@ let
   }) { overlays = [ rust_overlay ]; };
 
   rustVersion = "2022-10-01";
-  rust = pkgs.rust-bin.nightly.${rustVersion}.default.override {
+  sv-rust = pkgs.rust-bin.nightly.${rustVersion}.default.override {
     extensions = [
       "rust-src"
       "clippy"
@@ -16,18 +16,17 @@ let
     ];
   };
 
-  sv-python = pkgs.python311.withPackages (p: with p; [
-  ]);
-
 in
-with pkgs; stdenv.mkDerivation {
-  name = "sv_circuit";
+with pkgs; with pkgs.python311Packages; buildPythonPackage rec {
+  name = "sv-tools";
   src = ./.;
 
   nativeBuildInputs = [
     cacert
     git
-    rust
-    sv-python
+    sv-rust
   ];
+
+  # NOTE(jl): python dependencies are declared by externally to nix in `pyproject.toml`.
+  format = "pyproject";
 }
