@@ -201,10 +201,7 @@ where
                 // Warn if this buffer maps an output to an output. I don't think it breaks
                 // anything, but it's weird.
                 if self.outputs.contains(&out) && self.outputs.contains(&src) {
-                    eprintln!(
-                        "Instruction: BUF {} --> {} maps an output to an output",
-                        src, out
-                    );
+                    eprintln!("Instruction: BUF {src} --> {out} maps an output to an output");
                 }
 
                 // If this buffer doesn't connect to any gates, it probably transparently maps
@@ -371,7 +368,7 @@ where
             .map(|i| &i.name)
             .collect::<Counter<_>>();
         for (name, count) in submod_counts.most_common_ordered() {
-            println!("    {}: {}", name, count);
+            println!("    {name}: {count}");
         }
 
         // Iterate over all the subcircuit descriptors
@@ -792,13 +789,14 @@ where
     Operation<T>: Identity<T>,
 {
     type Item = Operation<T>;
-    type IntoIter = impl Iterator<Item = Operation<T>>;
+    type IntoIter = impl Iterator<Item = Self::Item>;
 
     fn into_iter(self) -> Self::IntoIter {
         self.inputs
             .iter()
+            .cloned()
             .sorted()
-            .map(|i| Operation::Input(*i))
+            .map(|i| Operation::Input(i))
             .chain(self.topo_iter().cloned())
             .chain(
                 self.outputs
@@ -829,21 +827,21 @@ where
 
 #[cfg(test)]
 mod tests {
-    use crate::GenericCircuit;
+    use crate::{GenericCircuit, SVCircuitError};
     use mcircuit::Operation;
     use std::collections::{HashMap, HashSet};
     use std::iter::FromIterator;
 
     #[test]
-    fn test_minimize_indices() {
+    fn test_minimize_indices() -> Result<(), SVCircuitError> {
         // When we eventually move away from reserving the 1/0 wires, this test
         // (and any any others that use minimize_indices) are expected to break.
 
         let mut circuit: GenericCircuit<bool> = GenericCircuit::default();
         circuit._set_inputs(&HashSet::from_iter([3, 2]));
-        circuit._add_gate(Operation::Const(1, true));
-        circuit._add_gate(Operation::Add(12, 1, 3));
-        circuit._add_gate(Operation::Mul(8, 12, 2));
+        circuit._add_gate(Operation::Const(1, true))?;
+        circuit._add_gate(Operation::Add(12, 1, 3))?;
+        circuit._add_gate(Operation::Mul(8, 12, 2))?;
         circuit._build().expect("Failed to build circuit");
 
         circuit.minimize_wires();
@@ -858,18 +856,20 @@ mod tests {
                 Operation::Mul(6, 5, 2)
             ]
         );
+
+        Ok(())
     }
 
     #[test]
-    fn test_prune() {
+    fn test_prune() -> Result<(), SVCircuitError> {
         let mut circuit: GenericCircuit<bool> = GenericCircuit::default();
         circuit._set_inputs(&HashSet::from_iter([2, 3, 4]));
-        circuit._add_gate(Operation::Const(1, true));
-        circuit._add_gate(Operation::Add(5, 1, 2));
-        circuit._add_gate(Operation::Add(6, 3, 4));
-        circuit._add_gate(Operation::AddConst(7, 5, false));
-        circuit._add_gate(Operation::MulConst(8, 6, true));
-        circuit._add_gate(Operation::Mul(9, 7, 8));
+        circuit._add_gate(Operation::Const(1, true))?;
+        circuit._add_gate(Operation::Add(5, 1, 2))?;
+        circuit._add_gate(Operation::Add(6, 3, 4))?;
+        circuit._add_gate(Operation::AddConst(7, 5, false))?;
+        circuit._add_gate(Operation::MulConst(8, 6, true))?;
+        circuit._add_gate(Operation::Mul(9, 7, 8))?;
         circuit._build().expect("Failed to build circuit");
 
         circuit.prune();
@@ -885,22 +885,24 @@ mod tests {
                 Operation::Mul(9, 5, 6)
             ]
         );
+
+        Ok(())
     }
 
     #[test]
-    fn test_merge_simple() {
+    fn test_merge_simple() -> Result<(), SVCircuitError> {
         let mut top: GenericCircuit<bool> = GenericCircuit::default();
         top._set_inputs(&HashSet::from_iter([0, 1]));
-        top._add_gate(Operation::Mul(2, 0, 1));
-        top._add_gate(Operation::Add(4, 3, 2));
+        top._add_gate(Operation::Mul(2, 0, 1))?;
+        top._add_gate(Operation::Add(4, 3, 2))?;
         top.add_subcircuit("Inverter".to_string(), vec![(2, 7)], vec![(3, 9)]);
-        top._build();
+        top._build()?;
 
         let mut inverter: GenericCircuit<bool> = GenericCircuit::default();
         inverter._set_inputs(&HashSet::from_iter([7]));
         inverter._set_outputs(&HashSet::from_iter([9]));
-        inverter._add_gate(Operation::AddConst(9, 7, true));
-        inverter._build();
+        inverter._add_gate(Operation::AddConst(9, 7, true))?;
+        inverter._build()?;
 
         let library: HashMap<String, GenericCircuit<bool>> =
             HashMap::from_iter([("Inverter".to_string(), inverter)]);
@@ -917,32 +919,34 @@ mod tests {
                 Operation::Add(4, 3, 2),
             ]
         );
+
+        Ok(())
     }
 
     #[test]
-    fn test_merge_multi() {
+    fn test_merge_multi() -> Result<(), SVCircuitError> {
         let mut top: GenericCircuit<bool> = GenericCircuit::default();
         top._set_inputs(&HashSet::from_iter([3, 4]));
         top._set_outputs(&HashSet::from_iter([6]));
-        top._add_gate(Operation::Const(0, false));
-        top._add_gate(Operation::Const(1, true));
-        top._add_gate(Operation::Add(2, 0, 1));
-        top._add_gate(Operation::Add(5, 3, 4));
+        top._add_gate(Operation::Const(0, false))?;
+        top._add_gate(Operation::Const(1, true))?;
+        top._add_gate(Operation::Add(2, 0, 1))?;
+        top._add_gate(Operation::Add(5, 3, 4))?;
         top.add_subcircuit("Inner".to_string(), vec![(2, 5), (5, 6)], vec![(6, 4)]);
         top._build().expect("Failed to build top");
 
         let mut inner: GenericCircuit<bool> = GenericCircuit::default();
         inner._set_inputs(&HashSet::from_iter([5, 6]));
         inner._set_outputs(&HashSet::from_iter([4]));
-        inner._add_gate(Operation::Mul(2, 5, 6));
-        inner._add_gate(Operation::Add(4, 3, 2));
+        inner._add_gate(Operation::Mul(2, 5, 6))?;
+        inner._add_gate(Operation::Add(4, 3, 2))?;
         inner.add_subcircuit("Inverter".to_string(), vec![(2, 7)], vec![(3, 9)]);
         inner._build().expect("Failed to build inner");
 
         let mut inverter: GenericCircuit<bool> = GenericCircuit::default();
         inverter._set_inputs(&HashSet::from_iter([7]));
         inverter._set_outputs(&HashSet::from_iter([9]));
-        inverter._add_gate(Operation::AddConst(9, 7, true));
+        inverter._add_gate(Operation::AddConst(9, 7, true))?;
         inverter._build().expect("Failed to build inverter");
 
         let mut library: HashMap<String, GenericCircuit<bool>> =
@@ -967,18 +971,19 @@ mod tests {
                 Operation::AddConst(6, 12, false)
             ]
         );
+
+        Ok(())
     }
 
     #[test]
-    fn test_gate_count() {
+    fn test_gate_count() -> Result<(), SVCircuitError> {
         let mut circuit: GenericCircuit<bool> = GenericCircuit::default();
-        circuit._add_gate(Operation::Add(9, 7, 8));
-        circuit._add_gate(Operation::Add(10, 0, 1));
-        circuit._add_gate(Operation::Mul(11, 10, 9));
-        circuit._add_gate(Operation::AddConst(12, 11, true));
-        circuit._add_gate(Operation::Add(13, 12, 11));
-        circuit._add_gate(Operation::AddConst(6, 13, false));
-        circuit._build();
+        circuit._add_gate(Operation::Add(9, 7, 8))?;
+        circuit._add_gate(Operation::Add(10, 0, 1))?;
+        circuit._add_gate(Operation::Mul(11, 10, 9))?;
+        circuit._add_gate(Operation::AddConst(12, 11, true))?;
+        circuit._add_gate(Operation::Add(13, 12, 11))?;
+        circuit._add_gate(Operation::AddConst(6, 13, false))?;
 
         let counts = circuit.gate_count();
 
@@ -986,5 +991,7 @@ mod tests {
             counts,
             HashMap::from_iter([("Add", 3), ("AddConst", 2), ("Mul", 1)]),
         );
+
+        Ok(())
     }
 }
