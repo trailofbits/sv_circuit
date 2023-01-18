@@ -1,7 +1,7 @@
 [package]
 name = "sv_circuit"
 version = "0.1.1"
-authors = ["Eric Hennenfent <eric.hennenfent@trailofbits.com>"]
+authors = ["Eric Hennenfent <eric.hennenfent@trailofbits.com>", "Jack Leightcap <jack.leightcap@trailofbits.com", "Lisa Overall <lisa.overall@trailofbits.com>"]
 edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -29,12 +29,3 @@ crate-type = ["lib", "cdylib"]
 [[bin]]
 name = "sv-compositor"
 path = "src/main.rs"
-
-[[bin]]
-name = "lucid"
-path = "src/lucid.rs"
-
-[[bin]]
-name = "sv-bin-stat"
-path = "src/stat.rs"
-
