@@ -1,7 +1,7 @@
 [package]
 name = "sv_circuit"
 version = "0.1.1"
-authors = ["Eric Hennenfent <eric.hennenfent@trailofbits.com>", "Jack Leightcap <jack.leightcap@trailofbits.com", "Lisa Overall <lisa.overall@trailofbits.com>"]
+authors = ["Trail of Bits <sieve@trailofbits.com>"]
 edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -13,7 +13,7 @@ rand = "0.7.3"
 counter = "0.5.2"
 clap = "2.33.3"
 itertools = "0.10.0"
-mcircuit = { git = "https://github.com/trailofbits/mcircuit" }
+mcircuit = { git = "https://github.com/trailofbits/mcircuit", branch = "main" }
 num-traits = "0.2"
 serde = "1.0.124"
 bincode = "1.3.2"
