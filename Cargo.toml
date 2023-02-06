@@ -11,7 +11,7 @@ petgraph = "0.6.0"
 maplit = "1.0.2"
 rand = "0.7.3"
 counter = "0.5.2"
-clap = "2.33.3"
+clap = "4.1.4"
 itertools = "0.10.0"
 mcircuit = { git = "https://github.com/trailofbits/mcircuit", branch = "main" }
 num-traits = "0.2"
