@@ -8,8 +8,12 @@ format:
 
 .PHONY: lint
 lint:
-	cargo clippy -- -Dwarnings && cargo fmt && git diff --exit-code
+	cargo-clippy -Dwarnings && cargo fmt && git diff --exit-code
 
 .PHONY: test
 test:
 	cargo test
+
+.PHONY: install
+install:
+	cargo install --path .
