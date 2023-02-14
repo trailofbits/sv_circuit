@@ -1,4 +1,6 @@
-# sv-compositor
+# sv_circuit
+
+[![Build Status](https://github.com/trailofbits/sv_circuit/actions/workflows/ci.yml/badge.svg)](https://github.com/trailofbits/sholva/actions?query=workflow%3ACI)
 
 SIEVE circuit compositor.
 
@@ -6,6 +8,27 @@ SIEVE circuit compositor.
 
 Built using [nix](https://nixos.wiki/wiki/Nix_package_manager).
 Follow the upstream [nix installation instructions](https://nixos.org/download.html).
+
+## Building
+
+```bash
+$ nix-shell --pure --run "make"
+```
+
+> NOTE: `nix-shell` invocations interact poorly with, e.g., the [fish shell](https://fishshell.com/).
+> Use a [Development Environment](#devlopment-environment) to run the quoted command, or drop into bash temporarily.
+
+## Installing
+
+```bash
+$ nix-shell --pure --run "make install"
+```
+
+## Testing
+
+```bash
+$ nix-shell --pure --run "make test"
+```
 
 ## Development Environment
 
@@ -15,17 +38,17 @@ To enter a shell with all dependencies,
 $ nix-shell
 ```
 
-## Building
+Or a shell with _only_ the dependencies (eliminating any system-specifics):
 
 ```bash
-$ nix-shell --pure --run "cargo build --release"
+$ nix-shell --pure
 ```
 
-## Installing
+## Distribution and Licensing
 
-```bash
-$ nix-shell --pure --run "cargo install --path ."
-```
+The views, opinions, and/or findings expressed are those of the author(s) and
+should not be interpreted as representing the official views or policies of the
+Department of Defense or the U.S. Government.
 
-> NOTE: the above interacts poorly with the [fish shell](https://fishshell.com/).
-> Either use a development shell then run the quoted command, or drop into another shell temporarily.
+_sv_circuit_ is licensed under the GNU AGPLv3 License. A copy of the terms can
+be found in the [LICENSE](./LICENSE) file.
