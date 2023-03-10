@@ -2,6 +2,7 @@ use std::collections::{HashMap, VecDeque};
 use std::convert::TryInto;
 use std::fs::{read_to_string, File};
 use std::io::{prelude::*, BufReader, BufWriter};
+use std::ops::Range;
 use std::path::Path;
 
 use clap::{App, Arg};
@@ -134,6 +135,7 @@ fn emit_ir0(
         }?;
     }
     writeln!(circuit_writer, "@end")?;
+    writeln!(circuit_writer, "\n")?;
 
     // FIXME(jl): note about inputs, outputs, @functions, and flattening.
     // because our wires are identified just by a unique integer,
@@ -154,6 +156,9 @@ fn emit_ir0(
     // so just the number of wires the tiny86 body uses (currently ~46k),
     // then we can pick up counting here as we please.
 
+    // HACK(jl): number sufficiently large enough I know the tiny86 circuit won't conflict.
+    let mut wire_counter: usize = 100000;
+
     // emit circuit data.
     writeln!(circuit_writer, "@begin")?;
 
@@ -161,38 +166,36 @@ fn emit_ir0(
     // NOTE(jl): need at least 2 traces to compare.
     assert!(witness.len() >= 2);
 
+    let mut steps: VecDeque<Range<usize>> = VecDeque::with_capacity(2);
+
     for (step_count, step) in witness.iter().enumerate() {
+        // fetch the private input.
         writeln!(circuit_writer, "// step {}", step_count)?;
-        for (step_bit, _) in step.iter().enumerate() {
-            // FIXME(jl): fresh wire indices for each private input -- see above.
-            // for now, stub as `$step.$bit` -- totally invalid syntax, but expressive debugging.
-
-            // FIXME(jl): we also need to keep track of the contiguous range of wires each step
-            // uses for use in the @call args.
-
-            // FIXME(jl): how would `@private()` work in a function call?
-            // maaaaybe we can just have a function call to grab the next step?
-            writeln!(
-                circuit_writer,
-                "${}.{} <- @private();",
-                step_count, step_bit
-            )?;
+        let start = wire_counter;
+        for _ in step {
+            writeln!(circuit_writer, "${} <- @private();", wire_counter)?;
+            wire_counter += 1;
         }
-        // FIXME(jl): there's probably an iter adaptor interleave pattern for this.
-        // instead, only emit the @function call based on step counter -- maybe not the worst?
-        if step_count > 1 {
+        let end = wire_counter;
+        let step_range = Range { start, end };
+        steps.push_front(step_range);
+
+        if step_count > 0 {
             // FIXME(jl): again better function metadata maintenance.
             writeln!(
                 circuit_writer,
-                "${}.verify <- @call(tiny86, 1: ${}.1  ... ${}.655, 1: ${}.1 ... ${}.655);",
-                step_count,
-                // FIXME(jl): previous step wires' span.
-                step_count - 1,
-                step_count - 1,
-                // FIXME(jl): this step wires' span.
-                step_count,
-                step_count
+                "${} <- @call(tiny86, 1: ${}  ... ${}, 1: ${} ... ${});",
+                wire_counter,
+                // previous step wire range.
+                steps.back().unwrap().clone().min().unwrap(), // FIXME(jl): bleh
+                steps.back().unwrap().clone().max().unwrap(),
+                // current step wire range.
+                steps.front().unwrap().clone().min().unwrap(),
+                steps.front().unwrap().clone().max().unwrap(),
             )?;
+            writeln!(circuit_writer, "@assert_zero(${});", wire_counter)?;
+            steps.pop_back();
+            wire_counter += 1;
         }
     }
     writeln!(circuit_writer, "@end")?;
