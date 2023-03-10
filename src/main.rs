@@ -4,7 +4,7 @@ use std::io::{prelude::*, BufReader, BufWriter};
 use std::path::Path;
 
 use clap::{App, Arg};
-use mcircuit::exporters::{BristolFashion, Export, IR0, IR1};
+use mcircuit::exporters::{BristolFashion, Export, IR0, IR1, JSONL};
 use mcircuit::parsers::blif::{parse_split, BlifParser};
 use mcircuit::parsers::WireHasher;
 use mcircuit::{CombineOperation, Operation, Parse};
@@ -89,6 +89,7 @@ fn main() {
     let export_bristol = out_fname.ends_with(".bristol");
     let export_ir0 = out_fname.ends_with(".circuit");
     let export_ir1 = out_fname.ends_with(".ir1");
+    let export_jsonl = out_fname.ends_with(".jsonl");
 
     match (maybe_arith, maybe_bool, maybe_conn) {
         (Some(path), None, None) => {
@@ -120,22 +121,28 @@ fn main() {
                 })
                 .collect();
 
-            match (export_bristol, export_ir0, export_ir1) {
+            match (export_bristol, export_ir0, export_ir1, export_jsonl) {
                 // Bristol
-                (true, false, false) => BristolFashion::export_circuit(
+                (true, false, false, false) => BristolFashion::export_circuit(
                     &flat.into_iter().collect::<Vec<Operation<bool>>>(),
                     &w,
                     &mut writer,
                 ),
                 // IR0
-                (false, true, false) => IR0::export_circuit(
+                (false, true, false, false) => IR0::export_circuit(
                     &flat.into_iter().collect::<Vec<Operation<bool>>>(),
                     &w,
                     &mut writer,
                 )
                 .and(emit_ir0(base_fname, &w)),
                 // IR1
-                (false, false, true) => IR1::export_circuit(
+                (false, false, true, false) => IR1::export_circuit(
+                    &flat.into_iter().collect::<Vec<Operation<bool>>>(),
+                    &w,
+                    &mut writer,
+                ),
+                // JSON
+                (false, false, false, true) => JSONL::export_circuit(
                     &flat.into_iter().collect::<Vec<Operation<bool>>>(),
                     &w,
                     &mut writer,
