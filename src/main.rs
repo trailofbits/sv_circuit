@@ -5,14 +5,14 @@ use std::io::{prelude::*, BufReader, BufWriter};
 use std::path::Path;
 
 use clap::{App, Arg};
-use mcircuit::exporters::{BristolFashion, Export, IR0, IR1};
+use mcircuit::exporters::IR0;
 use mcircuit::parsers::blif::{parse_split, BlifParser};
 use mcircuit::parsers::WireHasher;
 use mcircuit::{CombineOperation, Operation, Parse};
 
 use std::io;
 use std::mem::size_of;
-use sv_circuit::CircuitCompositor;
+use sv_circuit::{CircuitCompositor, GenericCircuit};
 
 const WITNESS_LEN: usize = 656;
 
@@ -37,18 +37,165 @@ fn parse_witness(path: &str) -> Vec<[bool; WITNESS_LEN]> {
         .collect()
 }
 
-fn emit_ir0(base_fname: &str, witness: &[[bool; WITNESS_LEN]]) -> Result<(), io::Error> {
+fn emit_ir0(
+    tiny86: &GenericCircuit<bool>,
+    base_fname: &str,
+    witness: &[[bool; WITNESS_LEN]],
+) -> Result<(), io::Error> {
+    //
     // write witness.
+    //
     let witness_fname = format!("{base_fname}.private_input");
     let mut witness_writer =
         BufWriter::new(File::create(witness_fname).expect("Failed to open witness file"));
-    IR0::export_private_input(witness, &mut witness_writer).expect("Failed to write private input");
+    writeln!(witness_writer, "version 2.0.0-beta;")?;
+    writeln!(witness_writer, "{};", "private_input")?;
+    writeln!(witness_writer, "@type field 2;")?;
+    writeln!(witness_writer, "@begin")?;
+    for (i, step) in witness.iter().enumerate() {
+        writeln!(witness_writer, "// step {}", i)?;
+        for wit_value in step {
+            writeln!(witness_writer, "< {} > ;", *wit_value)?;
+        }
+    }
+    writeln!(witness_writer, "@end")?;
 
+    //
     // write instance.
+    //
     let instance_fname = format!("{base_fname}.public_input");
     let mut instance_writer =
         BufWriter::new(File::create(instance_fname).expect("Failed to open instance file"));
-    IR0::export_public_input(None, &mut instance_writer).expect("Failed to write public input");
+    writeln!(instance_writer, "version 2.0.0-beta;")?;
+    writeln!(instance_writer, "{};", "private_input")?;
+    writeln!(instance_writer, "@type field 2;")?;
+    writeln!(instance_writer, "@begin")?;
+    writeln!(instance_writer, "@end")?;
+
+    //
+    // write circuit.
+    //
+    let circuit_fname = format!("{base_fname}.circuit");
+    let mut circuit_writer =
+        BufWriter::new(File::create(circuit_fname).expect("Failed to open instance file"));
+    writeln!(circuit_writer, "version 2.0.0-beta;")?;
+    writeln!(circuit_writer, "circuit;")?;
+    writeln!(circuit_writer, "@type field 2;")?;
+
+    // emit circuit @function.
+    // FIXME(jl): use `tiny86.name` &c fields here -- see `GenericCircuit`.
+    writeln!(
+        circuit_writer,
+        "@function(tiny86, @out: 1:1; @in: 1:656, 1:656)"
+    )?;
+    // FIXME(jl): indent the body of the function.
+    for gate in tiny86.topo_iter() {
+        match gate {
+            Operation::Input(i) => {
+                writeln!(circuit_writer, "${} <- @private();", i)
+            }
+            Operation::Random(_) => panic!(),
+            Operation::Add(o, l, r) => {
+                writeln!(circuit_writer, "${} <- @add(${}, ${});", o, l, r)
+            }
+            Operation::AddConst(o, i, c) => {
+                writeln!(
+                    circuit_writer,
+                    "${} <- @addc(${}, < {} >);",
+                    o, i, *c as u32
+                )
+            }
+            Operation::Sub(o, l, r) => {
+                writeln!(circuit_writer, "${} <- @add(${}, ${});", o, l, r)
+            }
+            Operation::SubConst(o, i, c) => {
+                writeln!(
+                    circuit_writer,
+                    "${} <- @addc(${}, < {} >);",
+                    o, i, *c as u32
+                )
+            }
+            Operation::Mul(o, l, r) => {
+                writeln!(circuit_writer, "${} <- @mul(${}, ${});", o, l, r)
+            }
+            Operation::MulConst(o, i, c) => {
+                writeln!(
+                    circuit_writer,
+                    "${} <- @mulc(${}, < {} >);",
+                    o, i, *c as u32
+                )
+            }
+            Operation::AssertZero(w) => {
+                writeln!(circuit_writer, "@assert_zero(${});", w)
+            }
+            Operation::Const(w, c) => {
+                writeln!(circuit_writer, "${} <- < {} >;", w, *c as u32)
+            }
+        }?;
+    }
+    writeln!(circuit_writer, "@end")?;
+
+    // FIXME(jl): note about inputs, outputs, @functions, and flattening.
+    // because our wires are identified just by a unique integer,
+    // flattening reserves space for:
+    // - 2 wires, true and false (used for Bristol -- don't hurt us but also don't need).
+    // - all inputs -- so, here the tiny86 circuit doesn't start until 2 + 656 I think.
+    // - all outputs -- so, we can't use those wires for other assignments!
+    //
+    // I think this is missing:
+    // - we have to generate $stepsize number of wires for each private input bit.
+    // - plus a wire for the `ok` bit.
+    // - plus a wire to invert it -- maybe, if we do really want an `@assert_one`.
+    // there's going to be some funky managing to begin counting anew outside the function body.
+    //
+    // So we can either hack around it,
+    // or maybe enable a flattening "mode" where it doesn't
+    // do any reserving of bits -- then if we have a way of knowing where the flattener left off counting,
+    // so just the number of wires the tiny86 body uses (currently ~46k),
+    // then we can pick up counting here as we please.
+
+    // emit circuit data.
+    writeln!(circuit_writer, "@begin")?;
+
+    // FIXME(jl): ideally this can be caught much earlier.
+    // NOTE(jl): need at least 2 traces to compare.
+    assert!(witness.len() >= 2);
+
+    for (step_count, step) in witness.iter().enumerate() {
+        writeln!(circuit_writer, "// step {}", step_count)?;
+        for (step_bit, _) in step.iter().enumerate() {
+            // FIXME(jl): fresh wire indices for each private input -- see above.
+            // for now, stub as `$step.$bit` -- totally invalid syntax, but expressive debugging.
+
+            // FIXME(jl): we also need to keep track of the contiguous range of wires each step
+            // uses for use in the @call args.
+
+            // FIXME(jl): how would `@private()` work in a function call?
+            // maaaaybe we can just have a function call to grab the next step?
+            writeln!(
+                circuit_writer,
+                "${}.{} <- @private();",
+                step_count, step_bit
+            )?;
+        }
+        // FIXME(jl): there's probably an iter adaptor interleave pattern for this.
+        // instead, only emit the @function call based on step counter -- maybe not the worst?
+        if step_count > 1 {
+            // FIXME(jl): again better function metadata maintenance.
+            writeln!(
+                circuit_writer,
+                "${}.verify <- @call(tiny86, 1: ${}.1  ... ${}.655, 1: ${}.1 ... ${}.655);",
+                step_count,
+                // FIXME(jl): previous step wires' span.
+                step_count - 1,
+                step_count - 1,
+                // FIXME(jl): this step wires' span.
+                step_count,
+                step_count
+            )?;
+        }
+    }
+    writeln!(circuit_writer, "@end")?;
 
     Ok(())
 }
@@ -137,28 +284,12 @@ fn main() {
 
             match (export_bristol, export_ir0, export_ir1) {
                 // Bristol
-                (true, false, false) => BristolFashion::export_circuit(
-                    &flat.into_iter().collect::<Vec<Operation<bool>>>(),
-                    &w,
-                    &mut writer,
-                ),
+                (true, false, false) => todo!(),
                 // IR0
-                (false, true, false) => IR0::export_circuit(
-                    &flat.into_iter().collect::<Vec<Operation<bool>>>(),
-                    &w,
-                    &mut writer,
-                )
-                .and(emit_ir0(base_fname, &w)),
+                (false, true, false) => emit_ir0(&flat, base_fname, &w),
                 // IR1
-                (false, false, true) => IR1::export_circuit(
-                    &flat.into_iter().collect::<Vec<Operation<bool>>>(),
-                    &w,
-                    &mut writer,
-                ),
-                _ => {
-                    bincode::serialize_into(writer, &flat).expect("Failed to write circuit");
-                    Ok(())
-                }
+                (false, false, true) => todo!(),
+                _ => todo!(),
             }
             .expect("Target format compilation error.");
         }
