@@ -20,5 +20,5 @@ with pkgs; rustPlatform.buildRustPackage rec {
     latest.rustChannels.nightly.rust
   ];
 
-  cargoHash = "sha256-Xmls6HqE7B2YQlZmiEfKRevb6vfaPnRY5r0bTiQyneI=";
+  cargoHash = "sha256-ZQVG+V06W+4pzQBX3xGMyuxT/vSsOiS6OfdUT4VjYeQ=";
 }
