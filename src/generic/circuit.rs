@@ -201,7 +201,7 @@ where
                 // Warn if this buffer maps an output to an output. I don't think it breaks
                 // anything, but it's weird.
                 if self.outputs.contains(&out) && self.outputs.contains(&src) {
-                    eprintln!("Instruction: BUF {src} --> {out} maps an output to an output");
+                    log::debug!("Instruction: BUF {src} --> {out} maps an output to an output");
                 }
 
                 // If this buffer doesn't connect to any gates, it probably transparently maps
@@ -368,7 +368,7 @@ where
             .map(|i| &i.name)
             .collect::<Counter<_>>();
         for (name, count) in submod_counts.most_common_ordered() {
-            println!("    {name}: {count}");
+            log::debug!("    {name}: {count}");
         }
 
         // Iterate over all the subcircuit descriptors
@@ -442,7 +442,7 @@ where
                         //             missing.insert(*i);
                         //         }
                         //     }
-                        //     eprintln!(
+                        //     elog::debug!(
                         //         "Warning: subcircuit {} drops {} bits of input: {:?}",
                         //         desc.name,
                         //         missing.len(),
@@ -509,18 +509,18 @@ where
             }
         }
 
-        println!("Adding missing wires...");
+        log::debug!("Adding missing wires...");
         // We call the `build` operation, which is necessary to make the edges in our underlying
         // graph (assuming the gates weren't already topologically sorted)
-        println!("Created {} wires", merged._build()?);
+        log::debug!("Created {} wires", merged._build()?);
         // We undo the remappings on any IO wires for this subcircuit
         // We attempt to squash the buffer gates that we used to connect the parent circuits to
         // the subcircuits
-        println!("Squashing extra buffer gates");
-        println!("Removed {} buffers", merged.prune());
+        log::debug!("Squashing extra buffer gates");
+        log::debug!("Removed {} buffers", merged.prune());
 
-        println!("Currying constant gates");
-        println!("Removed {} constant gates", merged.curry());
+        log::debug!("Currying constant gates");
+        log::debug!("Removed {} constant gates", merged.curry());
 
         Ok(merged)
     }
@@ -589,7 +589,7 @@ where
             }
         }
 
-        // println!("Expected max_wire was {}, actual was {}", self.graph.edge_count() + self.inputs.len() + self.outputs.len(), max_wire);
+        log::warn!("Expected max_wire was {}, actual was {}", self.graph.edge_count() + self.inputs.len() + self.outputs.len(), max_wire);
         max_wire
     }
 

@@ -84,7 +84,7 @@ where
                         gate_index,
                         wire: _,
                     } => {
-                        println!("WARNING: {parent} contains a gate with an undriven input. Dropping this gate and trusting that its output won't be needed.");
+                        log::warn!("{parent} contains a gate with an undriven input. Dropping this gate and trusting that its output won't be needed.");
                         let gate = circuit
                             .graph
                             .remove_node(NodeIndex::new(gate_index))
@@ -160,7 +160,7 @@ where
             // If we haven't flattened the circuit, replace our current copy of it with a flattened
             // version
             if !is_flat {
-                println!("\nFlattening {sub_name}");
+                log::info!("Flattening {sub_name}");
                 let mut sub = self
                     .subcircuits
                     .remove(sub_name)
@@ -173,9 +173,9 @@ where
         // Now that we have one flattened copy of each subcircuit, we can flatten `top`. First, we
         // print out some debug information to help us estimate the size of the circuit (and how
         // much RAM we'll need)
-        println!("\nPerforming final flattening");
+        log::info!("Performing final flattening");
         for (name, sub) in self.subcircuits.iter() {
-            println!(
+            log::debug!(
                 "    {}: {} Gates | {} Wires | {} kb",
                 name,
                 sub.ngate(),
@@ -187,12 +187,12 @@ where
         }
 
         // Merge all of the subcircuits into the top module
-        println!("\n Top module:");
+        log::debug!("Top module:");
         let mut out = self.top.merge(&self.subcircuits)?;
 
         // Shrink the wires down into the smallest contiguous chunk of the 64-bit space as possible
         // so that they'll fit in less memory when we have to load them into Reverie.
-        println!("Minimizing wire indices");
+        log::debug!("Minimizing wire indices");
         out.minimize_wires();
         Ok(out)
     }

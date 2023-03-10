@@ -16,7 +16,7 @@ use mcircuit::{CombineOperation as Op, CombineOperation};
 /// and always allocating the smallest available free register.
 
 pub fn register_aliasing(circuit: &[Op], max_wire: usize) -> Vec<Op> {
-    println!("Calculating time of last use...");
+    log::debug!("Calculating time of last use...");
 
     let progress = ProgressBar::new(circuit.len() as u64);
     progress.set_draw_rate(4);
@@ -47,7 +47,7 @@ pub fn register_aliasing(circuit: &[Op], max_wire: usize) -> Vec<Op> {
     let mut new_wins = Vec::with_capacity(4);
     let mut new_wouts = Vec::with_capacity(4);
 
-    println!("Aliasing registers...");
+    log::debug!("Aliasing registers...");
     let progress = ProgressBar::new(circuit.len() as u64);
     progress.set_draw_rate(4);
 
@@ -111,7 +111,7 @@ pub fn register_aliasing(circuit: &[Op], max_wire: usize) -> Vec<Op> {
     let (largest_arith, largest_bool) = largest_wires(&new_circuit);
     let max_mem = max(largest_bool, largest_arith);
 
-    println!(
+    log::debug!(
         "register use: {} / {} ({:.2} % register reduction)",
         max_mem,
         max_wire,
