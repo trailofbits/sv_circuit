@@ -1,4 +1,5 @@
 use std::collections::{HashMap, VecDeque};
+use std::convert::TryInto;
 use std::fs::{read_to_string, File};
 use std::io::{prelude::*, BufReader, BufWriter};
 use std::path::Path;
@@ -13,7 +14,30 @@ use std::io;
 use std::mem::size_of;
 use sv_circuit::CircuitCompositor;
 
-fn emit_ir0(base_fname: &str, witness: &[bool]) -> Result<(), io::Error> {
+const WITNESS_LEN: usize = 656;
+
+// FIXME(jl): this should be modularized.
+// FIXME(jl): use anyhow! for binary crate.
+fn parse_witness(path: &str) -> Vec<[bool; WITNESS_LEN]> {
+    read_to_string(path)
+        .expect("failed to open witness")
+        .trim()
+        .split('\n')
+        .map(|step| {
+            step.chars()
+                .map(|c| match c {
+                    '0' => false,
+                    '1' => true,
+                    _ => panic!("bad bit {:?} in witness!", c),
+                })
+                .collect::<Vec<bool>>()
+                .try_into()
+                .expect("invalid trace step length!")
+        })
+        .collect()
+}
+
+fn emit_ir0(base_fname: &str, witness: &[[bool; WITNESS_LEN]]) -> Result<(), io::Error> {
     // write witness.
     let witness_fname = format!("{base_fname}.private_input");
     let mut witness_writer =
@@ -62,7 +86,7 @@ fn main() {
             Arg::with_name("witness")
                 .short("w")
                 .takes_value(true)
-                .help("Witness trace (length 560)"),
+                .help(&format!("Witness trace (n×{WITNESS_LEN})")),
         )
         .arg(
             Arg::with_name("output_file")
@@ -107,18 +131,9 @@ fn main() {
             let mut writer =
                 BufWriter::new(File::create(out_fname).expect("Failed to open output file"));
 
-            let witness = maybe_witness.expect("no witness for Bristol circuit!");
-            let w: Vec<bool> = read_to_string(witness)
-                .expect("failed to open witness")
-                .trim()
-                .chars()
-                .filter(|&c| c != '\n')
-                .map(|c| match c {
-                    '0' => false,
-                    '1' => true,
-                    _ => panic!("bad bit {:?} in witness!", c),
-                })
-                .collect();
+            let witness_path = maybe_witness.expect("no witness for Bristol circuit!");
+
+            let w = parse_witness(witness_path);
 
             match (export_bristol, export_ir0, export_ir1) {
                 // Bristol
