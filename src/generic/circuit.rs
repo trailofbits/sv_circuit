@@ -367,8 +367,8 @@ where
             .iter()
             .map(|i| &i.name)
             .collect::<Counter<_>>();
-        for (name, count) in submod_counts.most_common_ordered() {
-            log::debug!("    {name}: {count}");
+        for (subcircuit, frequency) in submod_counts.most_common_ordered() {
+            log::debug!("{}: merge {frequency}x {subcircuit}(s)", self.name);
         }
 
         // Iterate over all the subcircuit descriptors
