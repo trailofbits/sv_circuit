@@ -589,7 +589,11 @@ where
             }
         }
 
-        log::warn!("Expected max_wire was {}, actual was {}", self.graph.edge_count() + self.inputs.len() + self.outputs.len(), max_wire);
+        log::warn!(
+            "Expected max_wire was {}, actual was {}",
+            self.graph.edge_count() + self.inputs.len() + self.outputs.len(),
+            max_wire
+        );
         max_wire
     }
 
