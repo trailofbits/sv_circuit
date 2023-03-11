@@ -171,12 +171,15 @@ fn emit_ir0(
     for (step_count, step) in witness.iter().enumerate() {
         // fetch the private input.
         writeln!(circuit_writer, "// step {}", step_count)?;
+        // NOTE(jl): this end range is asserted as correct at the exit of this loop.
+        writeln!(circuit_writer, "@new(${} ... ${});", wire_counter, wire_counter + 655);
         let start = wire_counter;
         for _ in step {
             writeln!(circuit_writer, "${} <- @private();", wire_counter)?;
             wire_counter += 1;
         }
         let end = wire_counter;
+        assert!(end == start + 656);
         let step_range = Range { start, end };
         steps.push_front(step_range);
 
@@ -184,7 +187,7 @@ fn emit_ir0(
             // FIXME(jl): again better function metadata maintenance.
             writeln!(
                 circuit_writer,
-                "${} <- @call(tiny86, ${}  ... ${}, ${} ... ${});",
+                "${} <- @call(tiny86, ${} ... ${}, ${} ... ${});",
                 wire_counter,
                 // previous step wire range.
                 steps.back().unwrap().clone().min().unwrap(), // FIXME(jl): bleh
