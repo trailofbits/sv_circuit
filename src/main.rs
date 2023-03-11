@@ -89,7 +89,7 @@ fn emit_ir0(
     // FIXME(jl): use `tiny86.name` &c fields here -- see `GenericCircuit`.
     writeln!(
         circuit_writer,
-        "@function(tiny86, @out: 0:1, @in: 0:656, 0:656)"
+        "@function(tiny86, @out: 1, @in: 656, 656)"
     )?;
     // FIXME(jl): indent the body of the function.
     for gate in tiny86.topo_iter() {
