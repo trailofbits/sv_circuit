@@ -56,7 +56,7 @@ fn emit_ir0(
     for (i, step) in witness.iter().enumerate() {
         writeln!(witness_writer, "// step {}", i)?;
         for wit_value in step {
-            writeln!(witness_writer, "< {} > ;", *wit_value)?;
+            writeln!(witness_writer, "< {} > ;", *wit_value as u32)?;
         }
     }
     writeln!(witness_writer, "@end")?;
@@ -68,7 +68,7 @@ fn emit_ir0(
     let mut instance_writer =
         BufWriter::new(File::create(instance_fname).expect("Failed to open instance file"));
     writeln!(instance_writer, "version 2.0.0-beta;")?;
-    writeln!(instance_writer, "{};", "private_input")?;
+    writeln!(instance_writer, "{};", "public_input")?;
     writeln!(instance_writer, "@type field 2;")?;
     writeln!(instance_writer, "@begin")?;
     writeln!(instance_writer, "@end")?;
@@ -82,12 +82,14 @@ fn emit_ir0(
     writeln!(circuit_writer, "version 2.0.0-beta;")?;
     writeln!(circuit_writer, "circuit;")?;
     writeln!(circuit_writer, "@type field 2;")?;
+    writeln!(circuit_writer, "@begin")?;
+    writeln!(circuit_writer, "")?;
 
     // emit circuit @function.
     // FIXME(jl): use `tiny86.name` &c fields here -- see `GenericCircuit`.
     writeln!(
         circuit_writer,
-        "@function(tiny86, @out: 1:1; @in: 1:656, 1:656)"
+        "@function(tiny86, @out: 0:1, @in: 0:656, 0:656)"
     )?;
     // FIXME(jl): indent the body of the function.
     for gate in tiny86.topo_iter() {
@@ -160,8 +162,6 @@ fn emit_ir0(
     let mut wire_counter: usize = 100000;
 
     // emit circuit data.
-    writeln!(circuit_writer, "@begin")?;
-
     // FIXME(jl): ideally this can be caught much earlier.
     // NOTE(jl): need at least 2 traces to compare.
     assert!(witness.len() >= 2);
@@ -184,7 +184,7 @@ fn emit_ir0(
             // FIXME(jl): again better function metadata maintenance.
             writeln!(
                 circuit_writer,
-                "${} <- @call(tiny86, 1: ${}  ... ${}, 1: ${} ... ${});",
+                "${} <- @call(tiny86, ${}  ... ${}, ${} ... ${});",
                 wire_counter,
                 // previous step wire range.
                 steps.back().unwrap().clone().min().unwrap(), // FIXME(jl): bleh
