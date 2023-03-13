@@ -1,3 +1,4 @@
+use itertools::Itertools;
 use std::collections::{HashMap, VecDeque};
 use std::convert::TryInto;
 use std::fs::{read_to_string, File};
@@ -6,7 +7,6 @@ use std::ops::Range;
 use std::path::Path;
 
 use clap::{App, Arg};
-use mcircuit::exporters::IR0;
 use mcircuit::parsers::blif::{parse_split, BlifParser};
 use mcircuit::parsers::WireHasher;
 use mcircuit::{CombineOperation, Operation, Parse};
@@ -92,11 +92,11 @@ fn emit_ir0(
         "@function(tiny86, @out: 0:1, @in: 0:656, 0:656)"
     )?;
     // NOTE(lo): wire numbering in function bodies starts with the output and proceeds sequentially through the inputs
-    // e.g. for the function signature above, which corresponds to tiny86(step1, step2) 
+    // e.g. for the function signature above, which corresponds to tiny86(step1, step2)
     // $0 is the output wire, i.e., the value written to ok in check.v
-    // $1 ... $656 are the step1 input wires 
+    // $1 ... $656 are the step1 input wires
     // $657 ... $1312 are the step2 input wires
- 
+
     // FIXME(lo): we need a counter to increment through the input wire indices for the Operation::Input case below, i.e.,
     // let mut input_wire_idx: usize = 0;
     // but tiny86.topo_iter() already comes with a numbering that may conflict with these indices...
@@ -105,17 +105,10 @@ fn emit_ir0(
     // FIXME(jl): indent the body of the function.
     for gate in tiny86.topo_iter() {
         match gate {
-            Operation::Input(i) => {
-                //FIXME(lo): rather than @private(), we need to get the next input wire index in $1 ... $1312
-                //input_wire_idx += 1;
-                writeln!(circuit_writer, "${} <- private();", i)
-            }
-            Operation::Random(_) => panic!(),
+            Operation::Input(_) => panic!("Input in tiny86 circuit body!"),
+            Operation::Random(_) => panic!("Random unsupported!"),
             Operation::Add(o, l, r) => {
-                writeln!(
-                    circuit_writer, 
-                    "${} <- @add(${}, ${});", 
-                    o, l, r)
+                writeln!(circuit_writer, "${} <- @add(${}, ${});", o, l, r)
             }
             Operation::AddConst(o, i, c) => {
                 writeln!(
@@ -125,10 +118,7 @@ fn emit_ir0(
                 )
             }
             Operation::Sub(o, l, r) => {
-                writeln!(
-                    circuit_writer, "${} <- @add(${}, ${});", 
-                    o, l, r
-                )
+                writeln!(circuit_writer, "${} <- @add(${}, ${});", o, l, r)
             }
             Operation::SubConst(o, i, c) => {
                 writeln!(
@@ -138,11 +128,7 @@ fn emit_ir0(
                 )
             }
             Operation::Mul(o, l, r) => {
-                writeln!(
-                    circuit_writer, 
-                    "${} <- @mul(${}, ${});", 
-                    o, l, r
-                )
+                writeln!(circuit_writer, "${} <- @mul(${}, ${});", o, l, r)
             }
             Operation::MulConst(o, i, c) => {
                 writeln!(
@@ -151,13 +137,18 @@ fn emit_ir0(
                     o, i, *c as u32
                 )
             }
-            Operation::AssertZero(w) => {
-                writeln!(circuit_writer, "@assert_zero(${});", w)
-            }
+            Operation::AssertZero(_) => panic!("Unexpected assertion in tiny86 circuit!"),
             Operation::Const(w, c) => {
                 writeln!(circuit_writer, "${} <- < {} >;", w, *c as u32)
             }
         }?;
+    }
+    // HACK(jl): this exporting function should be independent of our tiny86 geometry;
+    // here we're just lucky the number of outputs slots nicely into the area reserved for Bristol
+    // True/False constants.
+    assert!(tiny86.outputs.len() == 1);
+    for output in tiny86.outputs.iter().sorted() {
+        writeln!(circuit_writer, "$0 <- ${};", output)?;
     }
 
     // FIXME(lo): ok bit needs to be negated and assigned to output wire $0
@@ -199,7 +190,12 @@ fn emit_ir0(
         // fetch the private input.
         writeln!(circuit_writer, "// step {}", step_count)?;
         // NOTE(jl): this end range is asserted as correct at the exit of this loop.
-        writeln!(circuit_writer, "@new(${} ... ${});", wire_counter, wire_counter + 655);
+        writeln!(
+            circuit_writer,
+            "@new(${} ... ${});",
+            wire_counter,
+            wire_counter + 655
+        )?;
         let start = wire_counter;
         for _ in step {
             writeln!(circuit_writer, "${} <- @private();", wire_counter)?;
