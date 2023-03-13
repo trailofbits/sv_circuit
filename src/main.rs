@@ -86,7 +86,6 @@ fn emit_ir0(
     writeln!(circuit_writer, "")?;
 
     // emit circuit @function.
-    // FIXME(jl): use `tiny86.name` &c fields here -- see `GenericCircuit`.
     writeln!(
         circuit_writer,
         "@function({}, @out: 0:{}, @in: 0:{}, 0:{})",
@@ -107,9 +106,8 @@ fn emit_ir0(
     // but tiny86.topo_iter() already comes with a numbering that may conflict with these indices...
     // We also don't appear to hit the Operation::Input case.
 
-    // FIXME(jl): indent the body of the function.
     for gate in tiny86.topo_iter() {
-        write!(circuit_writer, "  ")?;
+        write!(circuit_writer, "  ")?; // indent body
         match gate {
             Operation::Input(_) => panic!("Input in tiny86 circuit body!"),
             Operation::Random(_) => panic!("Random unsupported!"),
@@ -183,7 +181,8 @@ fn emit_ir0(
     // then we can pick up counting here as we please.
 
     // HACK(jl): number sufficiently large enough I know the tiny86 circuit won't conflict.
-    let mut wire_counter: usize = 100000;
+    // FIXME(jl): this should start from the last assigned wire of the tiny86 body.
+    let mut wire_counter: usize = 0;
 
     // emit circuit data.
     // FIXME(jl): ideally this can be caught much earlier.
@@ -193,27 +192,34 @@ fn emit_ir0(
     let mut steps: VecDeque<Range<usize>> = VecDeque::with_capacity(2);
 
     for (step_count, step) in witness.iter().enumerate() {
-        // fetch the private input.
+        // fetch the private input;
+        // 1. allocate a contiguous wire range with `@new`, using the tiny86 step size,
+        // 2. emit an `@private` for each bit of the the inputs step, maintaining pairs
+        //    of steps in 2-depth deque,
+        // 3. emit an `@call` to the tiny86 function with step pair,
         writeln!(circuit_writer, "// step {}", step_count)?;
-        // NOTE(jl): this end range is asserted as correct at the exit of this loop.
+        // 1.
         writeln!(
             circuit_writer,
-            "@new(${} ... ${});",
+            "@new(${} ... ${});", // NOTE(jl): this end range is asserted at exit of this loop.
             wire_counter,
-            wire_counter + 655
+            wire_counter + tiny86.inputs.len() / 2 - 1
         )?;
+
+        // 2.
         let start = wire_counter;
         for _ in step {
             writeln!(circuit_writer, "${} <- @private();", wire_counter)?;
             wire_counter += 1;
         }
         let end = wire_counter;
-        assert!(end == start + 656);
+        assert!(end == start + tiny86.inputs.len() / 2);
+        // push current step onto deque
         let step_range = Range { start, end };
         steps.push_front(step_range);
 
         if step_count > 0 {
-            // FIXME(jl): again better function metadata maintenance.
+            // 3.
             writeln!(
                 circuit_writer,
                 "${} <- @call({}, ${} ... ${}, ${} ... ${});",
@@ -226,9 +232,11 @@ fn emit_ir0(
                 steps.front().unwrap().clone().min().unwrap(),
                 steps.front().unwrap().clone().max().unwrap(),
             )?;
+            // 4.
             writeln!(circuit_writer, "@assert_zero(${});", wire_counter)?;
-            steps.pop_back();
             wire_counter += 1;
+            // pop verified step off of deque
+            steps.pop_back();
         }
     }
     writeln!(circuit_writer, "@end")?;
