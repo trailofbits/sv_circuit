@@ -89,7 +89,12 @@ fn emit_ir0(
     // FIXME(jl): use `tiny86.name` &c fields here -- see `GenericCircuit`.
     writeln!(
         circuit_writer,
-        "@function(tiny86, @out: 0:1, @in: 0:656, 0:656)"
+        "@function({}, @out: 0:{}, @in: 0:{}, 0:{})",
+        tiny86.name,
+        tiny86.outputs.len(),
+        // NOTE(jl): guaranteed two inputs of same size in `check.v`.
+        tiny86.inputs.len() / 2,
+        tiny86.inputs.len() / 2
     )?;
     // NOTE(lo): wire numbering in function bodies starts with the output and proceeds sequentially through the inputs
     // e.g. for the function signature above, which corresponds to tiny86(step1, step2)
@@ -210,8 +215,9 @@ fn emit_ir0(
             // FIXME(jl): again better function metadata maintenance.
             writeln!(
                 circuit_writer,
-                "${} <- @call(tiny86, ${} ... ${}, ${} ... ${});",
+                "${} <- @call({}, ${} ... ${}, ${} ... ${});",
                 wire_counter,
+                tiny86.name,
                 // previous step wire range.
                 steps.back().unwrap().clone().min().unwrap(), // FIXME(jl): bleh
                 steps.back().unwrap().clone().max().unwrap(),
