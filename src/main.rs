@@ -310,8 +310,7 @@ fn main() {
                 BufReader::new(File::open(path).expect("Failed to open boolean circuit file"));
             let (flat, _, _) = sv_circuit::flatten(BlifParser::<bool>::new(reader));
 
-            let mut writer =
-                BufWriter::new(File::create(out_fname).expect("Failed to open output file"));
+            // let mut writer = BufWriter::new(File::create(out_fname).expect("Failed to open output file"));
 
             let witness_path = maybe_witness.expect("no witness for Bristol circuit!");
 
