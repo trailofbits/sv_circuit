@@ -84,8 +84,8 @@ where
         let mut frozen: HashSet<Wire> = HashSet::new();
 
         // Fix the input and output symbols
-        frozen.extend(self.inputs.iter());
         frozen.extend(self.outputs.iter());
+        frozen.extend(self.inputs.iter());
 
         // Start at one above the number of fixed wires
         let mut counter: usize = frozen.iter().max().unwrap_or(&0) + 1;
