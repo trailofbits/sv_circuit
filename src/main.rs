@@ -109,6 +109,7 @@ fn emit_ir0(
 
     // FIXME(jl): indent the body of the function.
     for gate in tiny86.topo_iter() {
+        write!(circuit_writer, "  ")?;
         match gate {
             Operation::Input(_) => panic!("Input in tiny86 circuit body!"),
             Operation::Random(_) => panic!("Random unsupported!"),
