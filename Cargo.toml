@@ -19,8 +19,8 @@ serde = "1.0.156"
 bincode = "1.3.2"
 indicatif = "0.17.3"
 fnv = "1.0.7"
-thiserror = "1.0.30"
-anyhow = "1.0.51"
+thiserror = "1.0.39"
+anyhow = "1.0.69"
 
 [lib]
 name = "sv_circuit"
