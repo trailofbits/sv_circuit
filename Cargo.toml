@@ -3,6 +3,7 @@ name = "sv_circuit"
 version = "0.1.1"
 authors = ["Trail of Bits <sieve@trailofbits.com>"]
 edition = "2018"
+description = "Converts circuits in the BLIF circuit format to composite boolean/arithmetic circuits"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -11,7 +12,7 @@ petgraph = "0.6.3"
 maplit = "1.0.2"
 rand = "0.7.3"
 counter = "0.5.2"
-clap = "4.2.0"
+clap = { version = "4.2.0", features = ["cargo"]}
 itertools = "0.10.0"
 mcircuit = { git = "https://github.com/trailofbits/mcircuit", branch = "main" }
 num-traits = "0.2"

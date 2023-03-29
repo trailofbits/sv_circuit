@@ -3,7 +3,7 @@ use std::fs::{read_to_string, File};
 use std::io::{prelude::*, BufReader, BufWriter};
 use std::path::Path;
 
-use clap::{App, Arg};
+use clap::{arg, command};
 use mcircuit::exporters::{BristolFashion, Export, IR0, IR1};
 use mcircuit::parsers::blif::{parse_split, BlifParser};
 use mcircuit::parsers::WireHasher;
@@ -31,59 +31,24 @@ fn emit_ir0(base_fname: &str, witness: &[bool]) -> Result<(), io::Error> {
 
 /// Rust version of circuit compositor
 fn main() {
-    let matches = App::new("sv-compositor (Rusty)")
-        .version(env!("CARGO_PKG_VERSION"))
-        .author("Eric Hennenfent <eric.hennenfent@trailofbits.com>")
-        .about(
-            "Converts circuits in the BLIF circuit format to composite boolean/arithmetic circuits",
-        )
-        .arg(
-            Arg::with_name("arithmetic_circuit")
-                .short("a")
-                .long("arithmetic_circuit")
-                .takes_value(true)
-                .help("BLIF File"),
-        )
-        .arg(
-            Arg::with_name("boolean_circuit")
-                .short("b")
-                .long("boolean_circuit")
-                .takes_value(true)
-                .help("BLIF File"),
-        )
-        .arg(
-            Arg::with_name("connection_circuit")
-                .short("c")
-                .long("connection_circuit")
-                .takes_value(true)
-                .help("Connection circuit file"),
-        )
-        .arg(
-            Arg::with_name("witness")
-                .short("w")
-                .takes_value(true)
-                .help("Witness trace (length 560)"),
-        )
-        .arg(
-            Arg::with_name("output_file")
-                .short("o")
-                .long("output_file")
-                .takes_value(true)
-                .required(true)
-                .help("Compiled circuit"),
-        )
+    let matches = command!()
+        .arg(arg!(-a --arithmetic_circuit <FILE> "BLIF file"))
+        .arg(arg!(-b --boolean_circuit <FILE> "BLIF file"))
+        .arg(arg!(-c --connection_circuit <FILE> "Connection circuit file"))
+        .arg(arg!(-w --witness <FILE> "Witness trace"))
+        .arg(arg!(-o --output_file <FILE> "Compiled circuit").required(true))
         .get_matches();
 
-    let out_fname = matches.value_of("output_file").unwrap();
+    let out_fname = matches.get_one::<String>("output_file").unwrap();
     let base_fname = Path::new(out_fname)
         .file_stem()
         .and_then(|s| s.to_str())
         .expect("Failed to parse base_fname from output path");
 
-    let maybe_arith = matches.value_of("arithmetic_circuit");
-    let maybe_bool = matches.value_of("boolean_circuit");
-    let maybe_conn = matches.value_of("connection_circuit");
-    let maybe_witness = matches.value_of("witness");
+    let maybe_arith = matches.get_one::<String>("arithmetic_circuit");
+    let maybe_bool = matches.get_one::<String>("boolean_circuit");
+    let maybe_conn = matches.get_one::<String>("connection_circuit");
+    let maybe_witness = matches.get_one::<String>("witness");
 
     // compilation target determined by output file extension.
     let export_bristol = out_fname.ends_with(".bristol");
