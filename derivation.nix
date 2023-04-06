@@ -1,4 +1,4 @@
-{ sources ? import ./nix/sources.nix, rustPlatform, lib }:
+{ sources ? import ./nix/sources.nix, lib }:
 
 let
   pkgs = import sources.nixpkgs {
@@ -14,10 +14,12 @@ rustPlatform.buildRustPackage rec {
 
   src = ./.;
 
-  nativeBuildInputs = [ git latest.rustChannels.nightly.rust ];
+  nativeBuildInputs = [ (pkgs.rustChannelOf { date = "2023-03-01"; channel = "nightly"; }).rust ];
 
   cargoLock = {
     lockFile = ./Cargo.lock;
-    allowBuiltinFetchGit = true;
+    outputHashes = {
+      "mcircuit-0.1.10" = "sha256-f5cpTd8wMRxku3UEqwjtxD5pGkoZ58uKM48PvGEGxuw=";
+    };
   };
 }
