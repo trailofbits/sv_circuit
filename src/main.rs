@@ -6,7 +6,7 @@ use std::io::{prelude::*, BufReader, BufWriter};
 use std::ops::Range;
 use std::path::Path;
 
-use clap::{App, Arg};
+use clap::{arg, command};
 use mcircuit::parsers::blif::{parse_split, BlifParser};
 use mcircuit::parsers::WireHasher;
 use mcircuit::{CombineOperation, Operation, Parse};
