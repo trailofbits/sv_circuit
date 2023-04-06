@@ -22,4 +22,6 @@ rustPlatform.buildRustPackage rec {
       "mcircuit-0.1.10" = "sha256-f5cpTd8wMRxku3UEqwjtxD5pGkoZ58uKM48PvGEGxuw=";
     };
   };
+
+  doCheck = true;
 }
