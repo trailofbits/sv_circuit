@@ -10,7 +10,7 @@ on:
     - cron: "0 12 * * *"
 
 jobs:
-  format:
+  build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
