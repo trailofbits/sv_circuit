@@ -14,7 +14,12 @@ rustPlatform.buildRustPackage rec {
 
   src = ./.;
 
-  nativeBuildInputs = [ (pkgs.rustChannelOf { date = "2023-03-01"; channel = "nightly"; }).rust ];
+  nativeBuildInputs = [
+    (pkgs.rustChannelOf {
+      date = "2023-03-01";
+      channel = "nightly";
+    }).rust
+  ];
 
   cargoLock = {
     lockFile = ./Cargo.lock;
