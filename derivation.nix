@@ -24,7 +24,7 @@ rustPlatform.buildRustPackage rec {
   cargoLock = {
     lockFile = ./Cargo.lock;
     outputHashes = {
-      "mcircuit-0.1.10" = "sha256-f5cpTd8wMRxku3UEqwjtxD5pGkoZ58uKM48PvGEGxuw=";
+      "mcircuit-0.1.10" = "sha256-ghkJHO0YQkFY/aA/t+LmY7bF9JHL5IdTfgSQbophwiw=";
     };
   };
 
