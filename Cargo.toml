@@ -12,7 +12,7 @@ petgraph = "0.6.3"
 maplit = "1.0.2"
 rand = "0.7.3"
 counter = "0.5.2"
-clap = { version = "4.2.3", features = ["cargo"]}
+clap = { version = "4.2.4", features = ["cargo"]}
 itertools = "0.10.0"
 mcircuit = { git = "https://github.com/trailofbits/mcircuit", branch = "main" }
 num-traits = "0.2"
