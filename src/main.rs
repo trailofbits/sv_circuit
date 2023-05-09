@@ -7,6 +7,7 @@ use std::ops::Range;
 use std::path::Path;
 
 use clap::{arg, command};
+use mcircuit::exporters::IR0;
 use mcircuit::parsers::blif::{parse_split, BlifParser};
 use mcircuit::parsers::WireHasher;
 use mcircuit::{CombineOperation, Operation, Parse};
@@ -15,11 +16,9 @@ use std::io;
 use std::mem::size_of;
 use sv_circuit::{CircuitCompositor, GenericCircuit};
 
-const WITNESS_LEN: usize = 656;
-
 // FIXME(jl): this should be modularized.
 // FIXME(jl): use anyhow! for binary crate.
-fn parse_witness(path: &str) -> Vec<[bool; WITNESS_LEN]> {
+fn parse_witness<const L: usize>(path: &str) -> Vec<[bool; L]> {
     read_to_string(path)
         .expect("failed to open witness")
         .trim()
@@ -41,7 +40,7 @@ fn parse_witness(path: &str) -> Vec<[bool; WITNESS_LEN]> {
 fn emit_ir0(
     tiny86: &GenericCircuit<bool>,
     base_fname: &str,
-    witness: &[[bool; WITNESS_LEN]],
+    witness: &[[bool; 656]],
 ) -> Result<(), io::Error> {
     //
     // write witness.

@@ -334,7 +334,7 @@ checksum = "3e2e65a1a2e43cfcb47a895c4c8b10d1f4a61097f9f254f183aee60cad9c651d"
 [[package]]
 name = "mcircuit"
 version = "0.1.10"
-source = "git+https://github.com/trailofbits/mcircuit?branch=main#363df49ca63138732e96b441114850969c109f98"
+source = "git+https://github.com/trailofbits/mcircuit?branch=jl/ir0-backend#ee85c6033975006894292154de487ea28f0387ce"
 dependencies = [
  "bincode",
  "lexpr",
