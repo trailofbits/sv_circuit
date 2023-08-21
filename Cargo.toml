@@ -8,7 +8,7 @@ description = "Converts circuits in the BLIF circuit format to composite boolean
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-petgraph = "0.6.3"
+petgraph = "0.6.4"
 maplit = "1.0.2"
 rand = "0.7.3"
 counter = "0.5.2"
