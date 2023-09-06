@@ -6,28 +6,26 @@ SIEVE circuit compositor.
 
 ## Dependencies
 
-Built using [nix](https://nixos.wiki/wiki/Nix_package_manager).
-Follow the upstream [nix installation instructions](https://nixos.org/download.html).
+`sv_circuit` is built using [nix](https://nixos.wiki/wiki/Nix_package_manager).
+It is recommended to use the [Determinate Systems installer](https://determinate.systems/posts/determinate-nix-installer):
+
+```sh
+$ curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | sh -s -- install
+```
+
+## Running
+
+Running without installing,
+
+
+```bash
+$ nix run github:trailofbits/sv_circuit
+```
 
 ## Building
 
 ```bash
-$ nix-shell --pure --run "make"
-```
-
-> NOTE: `nix-shell` invocations interact poorly with, e.g., the [fish shell](https://fishshell.com/).
-> Use a [Development Environment](#devlopment-environment) to run the quoted command, or drop into bash temporarily.
-
-## Installing
-
-```bash
-$ nix-shell --pure --run "make install"
-```
-
-## Testing
-
-```bash
-$ nix-shell --pure --run "make test"
+$ nix build
 ```
 
 ## Development Environment
@@ -35,13 +33,13 @@ $ nix-shell --pure --run "make test"
 To enter a shell with all dependencies,
 
 ```bash
-$ nix-shell
+$ nix develop
 ```
 
-Or a shell with _only_ the dependencies (eliminating any system-specifics):
+Testing,
 
 ```bash
-$ nix-shell --pure
+$ cargo test
 ```
 
 ## Distribution and Licensing
