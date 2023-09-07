@@ -29,7 +29,7 @@
             (pkgs.rustChannelOf {
               date = "2023-03-01";
               channel = "nightly";
-            }).rust
+            }).default
           ];
         in rec {
           default = sv_circuit;
