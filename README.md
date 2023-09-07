@@ -36,9 +36,18 @@ To enter a shell with all dependencies,
 $ nix develop
 ```
 
-Testing,
+Phases are defined as [Cargo hooks](https://github.com/NixOS/nixpkgs/blob/master/doc/languages-frameworks/rust.section.md#hooks-hooks).
+Running a build phase manually,
 
 ```bash
+$ cargoBuildHook
+$ cargoCheckHook
+```
+
+However standard `cargo` commands apply, for compiling a release build and testing:
+
+```bash
+$ cargo build --release
 $ cargo test
 ```
 
