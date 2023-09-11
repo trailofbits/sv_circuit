@@ -4,5 +4,7 @@ updates:
   directory: "/"
   schedule:
     interval: daily
-    time: "10:00"
-  open-pull-requests-limit: 10
+    time: "11:00"
+  ignore:
+    - dependency-name: "*"
+      update-types: ["version-update:semver-patch"]
