@@ -44,7 +44,7 @@
               lockFile = ./Cargo.lock;
               outputHashes = {
                 "mcircuit-0.1.10" =
-                  "sha256-ghkJHO0YQkFY/aA/t+LmY7bF9JHL5IdTfgSQbophwiw=";
+                  "sha256-MUlaG+/IdcIwqiPyv4o3r+flPpf9lzHHWAZHdMkxBjs=";
               };
             };
 
