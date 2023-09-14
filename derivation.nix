@@ -16,7 +16,7 @@ rustPlatform.buildRustPackage rec {
 
   nativeBuildInputs = [
     (pkgs.rustChannelOf {
-      date = "2023-03-01";
+      date = "2023-06-15";
       channel = "nightly";
     }).rust
   ];

@@ -27,7 +27,7 @@
           # nightly only. Pin to `pkgs.rust-bin.beta.latest.default` with future release.
           nativeBuildInputs = [
             (pkgs.rustChannelOf {
-              date = "2023-03-01";
+              date = "2023-06-15";
               channel = "nightly";
             }).default
           ];
