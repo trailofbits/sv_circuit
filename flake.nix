@@ -22,38 +22,38 @@
         let
           pkgs = nixpkgsFor.${system}.extend (import rust-overlay);
           inherit (pkgs) stdenv lib;
-
-          # NOTE(jl): as of 2023-07-02, `impl trait` feature is currently
-          # nightly only. Pin to `pkgs.rust-bin.beta.latest.default` with future release.
-          nativeBuildInputs = [
-            (pkgs.rustChannelOf {
-              date = "2023-06-15";
-              channel = "nightly";
-            }).default
-          ];
         in rec {
           default = sv_circuit;
-          sv_circuit = pkgs.rustPlatform.buildRustPackage rec {
-            pname = "sv_circuit";
-            version = "0.0.1";
+          sv_circuit = with pkgs;
+            let
+              platform = (rustChannelOf {
+                date = "2023-06-15";
+                channel = "nightly";
+              }).default;
+            in (makeRustPlatform {
+              cargo = platform;
+              rustc = platform;
+            }).buildRustPackage rec {
+              pname = "sv_circuit";
+              version = "0.0.1";
 
-            src = ./.;
-            inherit nativeBuildInputs;
+              src = ./.;
 
-            cargoLock = {
-              lockFile = ./Cargo.lock;
-              outputHashes = {
-                "mcircuit-0.1.10" =
-                  "sha256-MUlaG+/IdcIwqiPyv4o3r+flPpf9lzHHWAZHdMkxBjs=";
+              cargoLock = {
+                lockFile = ./Cargo.lock;
+                outputHashes = {
+                  "mcircuit-0.1.10" =
+                    "sha256-MUlaG+/IdcIwqiPyv4o3r+flPpf9lzHHWAZHdMkxBjs=";
+                };
+              };
+
+              doCheck = true;
+              meta = with lib; {
+                description =
+                  "Zero-knowledge proofs for i386 program execution";
+                license = licenses.agpl3Only;
               };
             };
-
-            doCheck = true;
-            meta = with lib; {
-              description = "Zero-knowledge proofs for i386 program execution";
-              license = licenses.agpl3Only;
-            };
-          };
         });
 
       apps = forAllSystems (system: rec {
