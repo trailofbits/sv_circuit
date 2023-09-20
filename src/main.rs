@@ -3,6 +3,7 @@ use std::fs::{read_to_string, File};
 use std::io::{prelude::*, BufReader, BufWriter};
 use std::path::Path;
 
+use anyhow::{bail, Result};
 use clap::{arg, command};
 use mcircuit::exporters::{BristolFashion, Export, IR0, IR1};
 use mcircuit::parsers::blif::{parse_split, BlifParser};
@@ -30,7 +31,7 @@ fn emit_ir0(base_fname: &str, witness: &[bool]) -> Result<(), io::Error> {
 }
 
 /// Rust version of circuit compositor
-fn main() {
+fn main() -> Result<()> {
     let matches = command!()
         .arg(arg!(-a --arithmetic_circuit <FILE> "BLIF file"))
         .arg(arg!(-b --boolean_circuit <FILE> "BLIF file"))
@@ -39,11 +40,12 @@ fn main() {
         .arg(arg!(-o --output_file <FILE> "Compiled circuit").required(true))
         .get_matches();
 
-    let out_fname = matches.get_one::<String>("output_file").unwrap();
-    let base_fname = Path::new(out_fname)
+    let out_fname: &String = matches.get_one::<String>("output_file").unwrap(); // FIXME(jl): refactor clap
+                                                                                // types
+    let base_fname: &str = Path::new(out_fname)
         .file_stem()
         .and_then(|s| s.to_str())
-        .expect("Failed to parse base_fname from output path");
+        .unwrap();
 
     let maybe_arith = matches.get_one::<String>("arithmetic_circuit");
     let maybe_bool = matches.get_one::<String>("boolean_circuit");
@@ -57,31 +59,26 @@ fn main() {
 
     match (maybe_arith, maybe_bool, maybe_conn) {
         (Some(path), None, None) => {
-            let reader =
-                BufReader::new(File::open(path).expect("Failed to open arithmetic circuit file"));
+            let reader = File::open(path).map(BufReader::new)?;
             let (flat, _, _) = sv_circuit::flatten(BlifParser::<u64>::new(reader));
-            let writer =
-                BufWriter::new(File::create(out_fname).expect("Failed to open output file"));
-            bincode::serialize_into(writer, &flat).expect("Failed to write circuit");
+            let writer = File::create(out_fname).map(BufWriter::new)?;
+            bincode::serialize_into(writer, &flat)?;
         }
         (None, Some(path), None) => {
-            let reader =
-                BufReader::new(File::open(path).expect("Failed to open boolean circuit file"));
+            let reader = File::open(path).map(BufReader::new)?;
             let (flat, _, _) = sv_circuit::flatten(BlifParser::<bool>::new(reader));
 
-            let mut writer =
-                BufWriter::new(File::create(out_fname).expect("Failed to open output file"));
+            let mut writer = File::create(out_fname).map(BufWriter::new)?;
 
             let witness = maybe_witness.expect("no witness for Bristol circuit!");
-            let w: Vec<bool> = read_to_string(witness)
-                .expect("failed to open witness")
+            let w: Vec<bool> = read_to_string(witness)?
                 .trim()
                 .chars()
                 .filter(|&c| c != '\n')
-                .map(|c| match c {
-                    '0' => false,
-                    '1' => true,
-                    _ => panic!("bad bit {:?} in witness!", c),
+                .flat_map(|c| match c {
+                    '0' => Ok(false),
+                    '1' => Ok(true),
+                    _ => bail!("bad bit {:?} in witness!", c),
                 })
                 .collect();
 
@@ -106,29 +103,23 @@ fn main() {
                     &mut writer,
                 ),
                 _ => {
-                    bincode::serialize_into(writer, &flat).expect("Failed to write circuit");
+                    bincode::serialize_into(writer, &flat)?;
                     Ok(())
                 }
-            }
-            .expect("Target format compilation error.");
+            }?;
         }
         (Some(arith_path), Some(bool_path), Some(conn_path)) => {
-            let bool_reader =
-                BufReader::new(File::open(bool_path).expect("Failed to open boolean circuit file"));
+            let bool_reader = File::open(bool_path).map(BufReader::new)?;
             let (flat_bool, top_bool, hasher_bool) =
                 sv_circuit::flatten(BlifParser::<bool>::new(bool_reader));
 
-            let arith_reader = BufReader::new(
-                File::open(arith_path).expect("Failed to open arithmetic circuit file"),
-            );
+            let arith_reader = BufReader::new(File::open(arith_path)?);
             let (flat_arith, top_arith, hasher_arith) =
                 sv_circuit::flatten(BlifParser::<u64>::new(arith_reader));
 
             let mut compositor = CircuitCompositor::new(flat_bool, flat_arith);
 
-            let conn_reader = BufReader::new(
-                File::open(conn_path).expect("Failed to open connection circuit file"),
-            );
+            let conn_reader = BufReader::new(File::open(conn_path)?);
             let (b2a, bool_translations, arith_translations) = read_connection_circuit(
                 conn_reader,
                 (top_bool, top_arith),
@@ -136,30 +127,21 @@ fn main() {
             );
 
             for (arith_untrans, mut bool_untrans) in b2a {
-                let arith_trans = arith_translations
-                    .get(&arith_untrans)
-                    .expect("Arithmetic wire left untranslated");
+                let arith_trans: &usize = arith_translations.get(&arith_untrans).unwrap(); // FIXME(jl):
+                                                                                           // into seemed to
+                                                                                           // work here?
                 let bool_trans: Vec<usize> = bool_untrans
                     .drain(..)
-                    .map(|u| {
-                        bool_translations
-                            .get(&u)
-                            .expect("Boolean wire left untranslated")
-                    })
+                    .map(|u| bool_translations.get(&u).unwrap()) // FIXME(jl)
                     .copied()
                     .collect();
 
-                compositor.connect(
-                    *arith_trans,
-                    *bool_trans
-                        .iter()
-                        .min()
-                        .expect("Boolean translation table was empty"),
-                );
+                if let Some(min) = bool_trans.iter().min() {
+                    compositor.connect(*arith_trans, *min)
+                }
             }
 
-            let writer =
-                BufWriter::new(File::create(out_fname).expect("Failed to open output file"));
+            let writer = BufWriter::new(File::create(out_fname)?);
 
             let (bool_gate_count, bool_wire_count, b2a_count, arith_gate_count, arith_wire_count) =
                 compositor.gate_stats();
@@ -185,14 +167,15 @@ fn main() {
                 arith_size_est / 1024
             );
 
-            bincode::serialize_into(writer, &compositor)
-                .expect("Failed to write composite circuit");
+            bincode::serialize_into(writer, &compositor)?;
             println!("Dumped composite circuit to {out_fname}");
         }
         (_, _, _) => {
             println!("Usage: -a [arithmetic circuit file] -b [boolean circuit file] -c [connection circuit file] -w [witness] -o [output file]")
         }
     }
+
+    Ok(())
 }
 
 type B2A = Vec<(usize, Vec<usize>)>;
