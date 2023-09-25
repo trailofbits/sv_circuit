@@ -2,7 +2,9 @@
 #![feature(impl_trait_in_assoc_type)]
 
 mod compositor;
+pub mod export;
 mod generic;
+pub mod parse;
 
 #[macro_use]
 extern crate maplit;
@@ -15,6 +17,10 @@ use mcircuit::parsers::blif::{BlifParser, BlifSubcircuitDesc, CanConstructVarian
 use mcircuit::parsers::WireHasher;
 use mcircuit::{Gate, Operation, Parse, WireValue};
 use std::collections::HashMap;
+
+pub const WITNESS_LEN: usize = 656;
+pub type WitnessStep = [bool; WITNESS_LEN];
+pub type Witness = Vec<WitnessStep>;
 
 pub type ArithCircuit = GenericCircuit<u64>;
 pub type BoolCircuit = GenericCircuit<bool>;
