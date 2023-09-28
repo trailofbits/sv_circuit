@@ -62,11 +62,12 @@ fn main() -> Result<()> {
         })
         .collect();
 
-    let mut output = File::create(&cli.output).map(BufWriter::new)?;
     let base_fname: &str = Path::new(&cli.output)
         .file_stem()
         .and_then(|s| s.to_str())
         .unwrap();
+    let statement_fname = format!("{base_fname}.circuit");
+    let mut output = File::create(statement_fname).map(BufWriter::new)?;
 
     // IR0
     IR0::export_circuit(
