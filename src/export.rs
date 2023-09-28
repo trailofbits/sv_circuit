@@ -27,8 +27,7 @@ pub fn private<F: Write>(writer: &mut F, witness: &Witness) -> Result<()> {
     writeln!(writer, "private_input;")?;
     writeln!(writer, "@type field 2;")?;
     writeln!(writer, "@begin")?;
-    writeln!(writer, "@end")?;
-
+    
     for (i, step) in witness.iter().enumerate() {
         writeln!(writer, "// step {}", i)?;
         for wit_value in step {
