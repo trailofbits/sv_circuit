@@ -12,7 +12,6 @@ anyhow = "1.0.71"
 bincode = "1.3.2"
 clap = { version = "4.4.3", features = ["derive"]}
 counter = "0.5.2"
-env_logger = "0.9.0"
 fnv = "1.0.7"
 indicatif = "0.17.4"
 itertools = "0.12.0"

@@ -512,15 +512,18 @@ where
         log::debug!("Adding missing wires...");
         // We call the `build` operation, which is necessary to make the edges in our underlying
         // graph (assuming the gates weren't already topologically sorted)
-        log::debug!("Created {} wires", merged._build()?);
+        let num_wires = merged._build()?;
+        log::debug!("Created {} wires", num_wires);
         // We undo the remappings on any IO wires for this subcircuit
         // We attempt to squash the buffer gates that we used to connect the parent circuits to
         // the subcircuits
         log::debug!("Squashing extra buffer gates");
-        log::debug!("Removed {} buffers", merged.prune());
+        let num_pruned_buffers = merged.prune();
+        log::debug!("Removed {} buffers", num_pruned_buffers);
 
         log::debug!("Currying constant gates");
-        log::debug!("Removed {} constant gates", merged.curry());
+        let num_constant_gates_removed = merged.curry();
+        log::debug!("Removed {} constant gates", num_constant_gates_removed);
 
         Ok(merged)
     }
