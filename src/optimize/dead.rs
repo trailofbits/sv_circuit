@@ -28,7 +28,7 @@ pub fn eliminate_dead_code(circuit: &[Op], max_wire: usize) -> Vec<Op> {
         }
     }
 
-    println!(
+    log::info!(
         "dead: {}, total: {} ({:.2}% circuit size reduction)",
         num_dead,
         circuit.len(),

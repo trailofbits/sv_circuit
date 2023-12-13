@@ -48,7 +48,7 @@ fn main() {
                 *counts.entry(key).or_insert(0) += 1;
             }
 
-            println!("{counts:?}");
+            log::debug!("{counts:?}");
         }
         "wires" => {
             let mut arith_wires: HashSet<usize> = HashSet::new();
@@ -62,14 +62,14 @@ fn main() {
                 }
             }
 
-            println!(
+            log::debug!(
                 "{{\"boolean_wires\": {}, \"arithmetic_wires\": {} }}",
                 bool_wires.len(),
                 arith_wires.len()
             )
         }
         _ => {
-            println!("Count options are: gates, wires")
+            log::debug!("Count options are: gates, wires")
         }
     }
 }
