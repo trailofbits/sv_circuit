@@ -10,7 +10,7 @@ description = "Converts circuits in the BLIF circuit format to composite boolean
 [dependencies]
 anyhow = "1.0.71"
 bincode = "1.3.2"
-clap = { version = "4.4.3", features = ["derive"]}
+clap = { version = "4.5.0", features = ["derive"]}
 counter = "0.5.2"
 fnv = "1.0.7"
 indicatif = "0.17.4"
